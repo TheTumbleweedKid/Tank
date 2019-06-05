@@ -183,13 +183,20 @@ def specialRound(x):
 
 bulletcolour = (255, 180, 180)
 ft_bulletcolour = (255, 180, 180)
+
 myfont = pygame.font.SysFont("Impact", 80)
 myfont2 = pygame.font.SysFont("Bahnscrift", 5)
-myfont3 = pygame.font.SysFont("Bahnscrift", 16)
+myfont3 = pygame.font.SysFont("Bahnscrift", 40)
+
 p1victorytext = myfont.render("GREEN WINS!", False, (0, 100, 0))
 p2victorytext = myfont.render("RED WINS!", False, (100, 0, 0))
+
 p1ammocount = 0
 p2ammocount = 0
+
+p1ammocountstr = str()
+p2ammocountstr = str()
+
 screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
 
 SCREEN_WIDTH = screen.get_width()
@@ -379,7 +386,7 @@ class Bullet:
 class Player:
     def __init__(self, player, x, y, bodycolour, left, right, up, down, fire, weaponclass, x_origin, y_origin):
         self.player = player
-        
+        self.isReloading = False
         if self.player == "player1":
             self.playerImg = pygame.image.load(".\TankAssets\GreenSoldier Paint\GreenSoldierDown(Paint).png")
         else:
@@ -546,17 +553,24 @@ class Player:
     
     def outOfAmmo(self, weaponclass):
         if self.firedBullets == weapon_magazines[weaponclass]:
+            self.isReloading = True
             self.firedBullets = 0
             return True
 
     def reloaded(self, weaponclass):
         if self.getReloadTime() >= weapon_reloads[weaponclass]:
+            self.isReloading = False
             return True
 
     def bullet(self, weaponclass):
         if self.outOfAmmo(self.weaponclass):
             self.startReload = time.time()
-                    
+            self.isReloading = True
+
+        if (not self.outOfAmmo(self.weaponclass)) and self.reloaded(self.weaponclass):
+            self.isReloading = False
+
+              
         if pressed[self.fire]:
             if (self.getCooldown() > weapon_cooldowns[self.weaponclass]) and (not self.outOfAmmo(self.weaponclass)) and self.reloaded(self.weaponclass):
                     self.lastFire = time.time()
@@ -720,6 +734,27 @@ while not done:
         
         obstacles.draw()
         
+        pressed = pygame.key.get_pressed()
+
+        if pressed[pygame.K_ESCAPE]:
+            done = True
+        
+        if p1.isReloading:
+            p1ammocount = "RELOADING..."
+
+        else:
+            p1ammocount = weapon_magazines[p1.weaponclass] - p1.firedBullets
+
+            
+        if p2.isReloading:
+            p2ammocount = "RELOADING..."
+
+        else:
+            p2ammocount = weapon_magazines[p2.weaponclass] - p2.firedBullets
+
+        p1ammocountstr = str("GREEN AMMO: " + str(p1ammocount))
+        p2ammocountstr = str("RED AMMO: " + str(p2ammocount))
+
         p1healthstr = str()
         p2healthstr = str()
         
@@ -735,11 +770,9 @@ while not done:
         p1healthtext = myfont2.render(p1healthstr, False, (0, 100, 0))
         p2healthtext = myfont2.render(p2healthstr, False, (100, 0, 0))
         
-        pressed = pygame.key.get_pressed()
+        p1ammotext = myfont3.render(p1ammocountstr, False, (0, 100, 0))
+        p2ammotext = myfont3.render(p2ammocountstr, False, (100, 0, 0))
 
-        if pressed[pygame.K_ESCAPE]:
-            done = True
-        
         if p1.health <= 30 and not p2.health <= 30:
             p1healthtext = myfont2.render(p1healthstr, False, (0, 0, 150))
         
@@ -748,13 +781,16 @@ while not done:
         
         screen.blit(p1healthtext, (p1.x - (p1healthint / 6.5), p1.y - 5))
         screen.blit(p2healthtext, (p2.x - (p2healthint / 6.5), p2.y - 5))
-        
+
+        screen.blit(p1ammotext, (SCREEN_WIDTH - 400, 20))
+        screen.blit(p2ammotext, (SCREEN_WIDTH - 400, 80))
+
         p1.move("player1")
         p2.move("player2")
-
-        p1.bullet(p1.weaponclass)    
+        
+        p1.bullet(p1.weaponclass)
         p2.bullet(p2.weaponclass)
-
+        
         p1.moveBullet(p2)
         p2.moveBullet(p1)
 
