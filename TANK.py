@@ -209,6 +209,22 @@ def gety():
     y = randrange(25, (SCREEN_HEIGHT - 40))
     return y
 
+class BloodSpatters:
+    def __init__(self, colour, x, y):
+        self.x = x
+        self.y = y
+        self.width = randint(11, 15)
+        self.height = randint(11, 15)
+        self.colour = colour
+
+        self.bloodspatters = []
+
+    def spatter(self):
+        pygame.draw.ellipse(screen, self.colour, pygame.Rect(self.x, self.y, randint(11, 15), randint(11, 15)))
+
+    def draw():
+        for spatter in bloodspatters:
+            bloodSpatter.spatter()
 
 class Obstacle:
     def __init__(self, colour, x, y):
@@ -246,7 +262,7 @@ class Obstacles:
                 if not self.isTouching(newObstacle) and not newObstacle.isTouching(p1) and not newObstacle.isTouching(p2):
                     self.obstacles.append(newObstacle)
                     break
-                    
+ 
     def isTouching(self, object):
         for obstacle in self.obstacles:
             
@@ -268,7 +284,7 @@ class Bullet:
         self.ftbullet_colour = (uniform(253, 255), uniform(110, 150), uniform(35, 55))
         self.x = x
         self.y = y
-
+        
         self.x_origin = x_origin
         self.y_origin = y_origin
         
@@ -276,7 +292,7 @@ class Bullet:
 
         self.dx = self.bulletSpeed(specialRound(dx))
         self.dy = self.bulletSpeed(specialRound(dy))
-
+        
         if weaponclass == "cs":
             self.dx += uniform(-6, 6)
             self.dy += uniform(-6, 6)
@@ -343,6 +359,8 @@ class Bullet:
     def isColliding(self, player):
         if player.isTouchingBullet(self):
             player.health -= self.damage
+            newBloodSpatter = BloodSpatter((randint(227, 250), 51, 51), player.x + 13.5, player.y + 13.5)
+            bloodspatters.append(newBloodSpatter)
             return True
 
         if obstacles.isTouching(self):
@@ -699,6 +717,13 @@ if p1.weaponclass == "r":
 
 if p2.weaponclass == "r":
     print("p2 dmg: " + str(bullet_damages["r"]))
+
+if p1.weaponclass == "r":
+    print("p1 fd: " + str(weapon_cooldowns["r"]))
+
+if p2.weaponclass == "r":
+    print("p2 fd: " + str(weapon_cooldowns["r"]))
+    
     
 while not done:
     for event in pygame.event.get():
@@ -785,6 +810,7 @@ while not done:
         screen.blit(p1ammotext, (SCREEN_WIDTH - 400, 20))
         screen.blit(p2ammotext, (SCREEN_WIDTH - 400, 80))
 
+        
         p1.move("player1")
         p2.move("player2")
         
@@ -794,6 +820,8 @@ while not done:
         p1.moveBullet(p2)
         p2.moveBullet(p1)
 
+        bloodspatters.draw()
+        
     pygame.display.flip()
     clock.tick(60)
     
