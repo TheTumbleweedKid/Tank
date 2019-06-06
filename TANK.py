@@ -76,7 +76,7 @@ weapon_reloads = {
     "br": 3,
     "bp": 1.4,
     "ft": 4,
-    "D": 0,
+    "D": 4,
     "td": 3
 }
 
@@ -159,7 +159,7 @@ bullet_damages = {
     "br": 5,
     "bp": 4.5,
     "ft": uniform(1, 1.75),
-    "D": 1.25,
+    "D": 2.5,
     "td": 100
 }
 
