@@ -213,8 +213,8 @@ class BloodSpatter:
     def __init__(self, colour, x, y):
         self.x = x
         self.y = y
-        self.width = randint(11, 15)
-        self.height = randint(11, 15)
+        self.width = randint(13, 19)
+        self.height = randint(13, 19)
         self.colour = colour
 
     def draw(self):
@@ -352,8 +352,9 @@ class Bullet:
 
     def isColliding(self, player):
         if player.isTouchingBullet(self):
-            global blood_splatters            
-            blood_splatters.append(BloodSpatter((randint(227, 250), 51, 51), player.x + uniform(-33.5, 33.5), player.y + uniform(-33.5, 33.5)))
+            global blood_splatters
+            for i in range(2):
+                blood_splatters.append(BloodSpatter((randint(227, 250), 51, 51), player.x + 20 + uniform(-28, 28), player.y + 20 + uniform(-28, 28)))
             
             player.health -= self.damage
             return True
