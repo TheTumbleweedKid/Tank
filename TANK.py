@@ -58,7 +58,7 @@ weapon_magazines = {
     "br": 10,
     "bp": 7,
     "ft": 900,
-    "D": 1000,
+    "D": 10000,
     "td": 3
 }
 
@@ -354,13 +354,12 @@ class Bullet:
         if player.isTouchingBullet(self):
             global blood_splatters
             for i in range(2):
-                blood_splatters.append(BloodSpatter((randint(227, 250), 51, 51), player.x + 20 + uniform(-28, 28), player.y + 20 + uniform(-28, 28)))
+                blood_splatters.append(BloodSpatter((randint(177, 200), 11, 11), player.x + 10 + uniform(-28, 28), player.y + 10 + uniform(-28, 28)))
             
             player.health -= self.damage
             return True
 
-        if obstacles.isTouching(self):
-            return True
+        if obstacles.isTouching(self):            return True
 
     def ps_range(self):
         dx = (self.x - self.x_origin)
@@ -514,7 +513,7 @@ class Player:
 
         if obstacles.isTouching(self):
             global blood_splatters            
-            blood_splatters.append(BloodSpatter((randint(227, 250), 51, 51), self.x + 13.5, self.y + 13.5))
+            blood_splatters.append(BloodSpatter((randint(177, 200), 11, 11), self.x + 13.5, self.y + 13.5))
             
             self.damage(0.25)
             self.x = self.oldX
