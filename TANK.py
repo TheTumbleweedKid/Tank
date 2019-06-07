@@ -159,7 +159,7 @@ bullet_damages = {
     "br": 5,
     "bp": 4.5,
     "ft": uniform(1, 1.75),
-    "D": 2.5,
+    "D": 4.5,
     "td": 100
 }
 
@@ -209,7 +209,7 @@ def gety():
     y = randrange(25, (SCREEN_HEIGHT - 40))
     return y
 
-class BloodSpatters:
+class BloodSpatter:
     def __init__(self, colour, x, y):
         self.x = x
         self.y = y
@@ -217,14 +217,8 @@ class BloodSpatters:
         self.height = randint(11, 15)
         self.colour = colour
 
-        self.bloodspatters = []
-
-    def spatter(self):
-        pygame.draw.ellipse(screen, self.colour, pygame.Rect(self.x, self.y, randint(11, 15), randint(11, 15)))
-
-    def draw():
-        for spatter in bloodspatters:
-            bloodSpatter.spatter()
+    def draw(self):
+        pygame.draw.ellipse(screen, self.colour, pygame.Rect(self.x, self.y, self.width, self.height))
 
 class Obstacle:
     def __init__(self, colour, x, y):
@@ -358,9 +352,10 @@ class Bullet:
 
     def isColliding(self, player):
         if player.isTouchingBullet(self):
+            global blood_splatters            
+            blood_splatters.append(BloodSpatter((randint(227, 250), 51, 51), player.x + uniform(-33.5, 33.5), player.y + uniform(-33.5, 33.5)))
+            
             player.health -= self.damage
-            newBloodSpatter = BloodSpatter((randint(227, 250), 51, 51), player.x + 13.5, player.y + 13.5)
-            bloodspatters.append(newBloodSpatter)
             return True
 
         if obstacles.isTouching(self):
@@ -485,7 +480,6 @@ class Player:
         if self.health <= 3:
             self.speed = player_speeds[self.weaponclass + "-low"]
 
-        
         if pressed[self.up]:
             self.dy = -self.speed
             self.lastDy = self.dy
@@ -518,6 +512,9 @@ class Player:
             self.y -= self.dy
 
         if obstacles.isTouching(self):
+            global blood_splatters            
+            blood_splatters.append(BloodSpatter((randint(227, 250), 51, 51), self.x + 13.5, self.y + 13.5))
+            
             self.damage(0.25)
             self.x = self.oldX
             self.y = self.oldY
@@ -711,6 +708,7 @@ class Player:
 p1 = Player("player1", 40, 40, (0, 100, 0), pygame.K_LEFT, pygame.K_RIGHT, pygame.K_UP, pygame.K_DOWN, pygame.K_SLASH, TankOptions.player1_weapon.value, 0, 0)
 p2 = Player("player2", 1460, 960, (100, 0, 0), pygame.K_a, pygame.K_d, pygame.K_w, pygame.K_s, pygame.K_q, TankOptions.player2_weapon.value, 0, 0)
 obstacles = Obstacles(TankOptions.obstacles_frame.value)
+blood_splatters = []
 
 if p1.weaponclass == "r":
     print("p1 dmg: " + str(bullet_damages["r"]))
@@ -756,6 +754,7 @@ while not done:
             screenfill = (140, 140, 140)
 
         screen.fill(screenfill)
+
         
         obstacles.draw()
         
@@ -819,8 +818,9 @@ while not done:
         
         p1.moveBullet(p2)
         p2.moveBullet(p1)
-
-        bloodspatters.draw()
+        
+        for splatter in blood_splatters:
+            splatter.draw()
         
     pygame.display.flip()
     clock.tick(60)
