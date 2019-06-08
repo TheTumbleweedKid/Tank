@@ -443,10 +443,10 @@ class Player:
         
 
         if self.weaponclass == "ps":
-            self.health = 115
+            self.health = 105
 
         elif self.weaponclass == "cs":
-            self.health = 115
+            self.health = 110
 
         elif self.weaponclass == "s":
             self.health = 85
@@ -749,7 +749,7 @@ while not done:
         
     else:
         if p1.health <= 30 and p2.health <= 30:
-            screenfill = (229, 58, 58)
+            screenfill = (214, 72, 72)
         else:
             screenfill = (140, 140, 140)
 
