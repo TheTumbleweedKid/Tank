@@ -204,10 +204,10 @@ SCREEN_WIDTH = screen.get_width()
 SCREEN_HEIGHT = screen.get_height()
 
 def getx():
-    x = randrange(25, (SCREEN_WIDTH - 40))
+    x = randrange(20, (SCREEN_WIDTH - 40))
     return x
 def gety():
-    y = randrange(25, (SCREEN_HEIGHT - 40))
+    y = randrange(20, (SCREEN_HEIGHT - 40))
     return y
 
 class BloodSpatter:
