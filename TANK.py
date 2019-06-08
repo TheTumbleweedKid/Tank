@@ -56,8 +56,8 @@ weapon_magazines = {
     "cs": 14,
     "ps": 8,
     "r": randint(7, 65),
-    "br": 10,
-    "bp": 7,
+    "br": 10 * r_burst,
+    "bp": 7 * p_burst,
     "ft": 900,
     "D": 500,
     "td": 3
@@ -157,11 +157,29 @@ bullet_damages = {
     "cs": 3,
     "ps": 10.5,
     "r": uniform(0.01, randint(10, 90)),
-    "br": 5,
+    "br": 12.5,
     "bp": 4.5,
     "ft": uniform(1, 1.75),
     "D": 4.5,
     "td": 100
+}
+
+bullet_penetration_factors = {
+    "smg": 1.5,
+    "mg": 7,
+    "hmg": 10,
+    "t": 20,
+    "n": 0,
+    "ss": 75,
+    "s": 25,
+    "cs": 6,
+    "ps": 15,
+    "r": uniform(0.01, randint(10, 90)),
+    "br": 12.5,
+    "bp": 3.5,
+    "ft": uniform(1, 1.75),
+    "D": 1.5,
+    "td": 400
 }
 
 obstacle_numbers = {
@@ -222,13 +240,13 @@ class BloodSpatter:
         pygame.draw.ellipse(screen, self.colour, pygame.Rect(self.x, self.y, self.width, self.height))
 
 class Obstacle:
-    def __init__(self, colour, x, y):
+    def __init__(self, colour, x, y, health):
         self.x = x
         self.y = y
         self.width = 60
         self.height = 60
         self.colour = colour
-        
+        self.health = health
     def create_obstacle(self):
         pygame.draw.ellipse(screen, self.colour, pygame.Rect(self.x, self.y, 60, 60))
 
@@ -253,7 +271,7 @@ class Obstacles:
         
         for i in range(randrange(range_1, range_2)):
             while True:
-                newObstacle = Obstacle((119, 49, 19), getx(), gety())
+                newObstacle = Obstacle((119, 49, 19), getx(), gety(), 400)
                 if not self.isTouching(newObstacle) and not newObstacle.isTouching(p1) and not newObstacle.isTouching(p2):
                     self.obstacles.append(newObstacle)
                     break
@@ -262,6 +280,11 @@ class Obstacles:
         for obstacle in self.obstacles:
             
             if obstacle.isTouching(object):
+                if type(object) == Bullet:
+                    obstacle.health -= 1 * bullet_penetration_factors[object.weaponclass]
+
+                if obstacle.health <= 0:
+                    self.obstacles.remove(obstacle)
                 return True
 
         return False
@@ -305,8 +328,8 @@ class Bullet:
             self.dy += uniform(-0.19, 0.19)
             
         if weaponclass == "br":
-            self.dx += uniform(-0.05, 0.05)
-            self.dy += uniform(-0.05, 0.05)
+            self.dx += uniform(-0.1, 0.1)
+            self.dy += uniform(-0.1, 0.1)
             
         if weaponclass == "s":
             self.dx += uniform(-0.05, 0.05)
@@ -360,7 +383,8 @@ class Bullet:
             player.health -= self.damage
             return True
 
-        if obstacles.isTouching(self):            return True
+        if obstacles.isTouching(self):
+            return True
 
     def ps_range(self):
         dx = (self.x - self.x_origin)
@@ -592,10 +616,8 @@ class Player:
         if pressed[self.fire]:
             if (self.getCooldown() > weapon_cooldowns[self.weaponclass]) and (not self.outOfAmmo(self.weaponclass)) and self.reloaded(self.weaponclass):
                     self.lastFire = time.time()
-                    self.firedBullets += 1
                     dx = self.dx
                     dy = self.dy
-                    
                     if dx == 0:
                         dx = self.lastDx
                     if dy == 0:
@@ -618,46 +640,59 @@ class Player:
                         self.bulletspawn_y = self.y + 30
                     
                     if self.weaponclass == "cs":
+                        self.firedBullets += 1
                         for i in range(cs_pellets):
                             newBullet = Bullet(self.bulletspawn_x, self.bulletspawn_y, dx, dy, self.weaponclass, self.x, self.y)
                             self.bullets.append(newBullet)
                             
+                            
                     elif self.weaponclass == "ps":
+                        self.firedBullets += 1
                         for i in range(ps_pellets):
                             newBullet = Bullet(self.bulletspawn_x, self.bulletspawn_y, dx, dy, self.weaponclass, self.x, self.y)
                             self.bullets.append(newBullet)
-
+                            
                             
                     elif self.weaponclass == "br":
                         for i in range(r_burst):
                             if dy == 0:
                                 newBullet = Bullet(self.bulletspawn_x - 14 * (i - 1), self.bulletspawn_y, dx, dy, self.weaponclass, self.x, self.y)
                                 self.bullets.append(newBullet)
+                                self.firedBullets += 1
+                                
                             elif dx == 0:
                                 newBullet = Bullet(self.bulletspawn_x, self.bulletspawn_y - 14 * (i - 1), dx, dy, self.weaponclass, self.x, self.y)
                                 self.bullets.append(newBullet)
+                                self.firedBullets += 1
 
                     elif self.weaponclass == "bp":
                         for i in range(p_burst):
                             if dy == 0:
                                 newBullet = Bullet(self.bulletspawn_x - 16 * (i - 1), self.bulletspawn_y, dx, dy, self.weaponclass, self.x, self.y)
                                 self.bullets.append(newBullet)
+                                self.firedBullets += 1
+                                
                             elif dx == 0:
                                 newBullet = Bullet(self.bulletspawn_x, self.bulletspawn_y - 16 * (i - 1), dx, dy, self.weaponclass, self.x, self.y)
                                 self.bullets.append(newBullet)
+                                self.firedBullets += 1
                                 
                     elif self.weaponclass == "hmg":
                         if dx == 0:
-                            newBullet = Bullet(self.bulletspawn_x - uniform(-8, 8), self.bulletspawn_y, dx, dy, self.weaponclass, self.x, self.y)
+                            newBullet = Bullet(self.bulletspawn_x - uniform(-10, 10), self.bulletspawn_y, dx, dy, self.weaponclass, self.x, self.y)
                             self.bullets.append(newBullet)
+                            self.firedBullets += 1
+                            
                         elif dy == 0:
-                            newBullet = Bullet(self.bulletspawn_x, self.bulletspawn_y - uniform(-8, 8), dx, dy, self.weaponclass, self.x, self.y)
+                            newBullet = Bullet(self.bulletspawn_x, self.bulletspawn_y - uniform(-10, 10), dx, dy, self.weaponclass, self.x, self.y)
                             self.bullets.append(newBullet)
+                            self.firedBullets += 1
 
                     elif self.weaponclass == "n":
                         if len(self.bullets) < 100:
                             newBullet = Bullet(self.x, self.y, dx, dy, self.weaponclass, self.x, self.y)
                             self.bullets.append(newBullet)
+                            self.firedBullets += 1
 
                     elif self.weaponclass == "t":
                         if len(self.bullets)>= 129:
@@ -667,9 +702,11 @@ class Player:
                             newBullet = Bullet(self.x, self.y, dx, dy, self.weaponclass, self.x, self.y)
                             self.bullets.append(newBullet)
                             
+                            
                     else:
                         newBullet = Bullet(self.bulletspawn_x, self.bulletspawn_y, dx, dy, self.weaponclass, self.x, self.y)
                         self.bullets.append(newBullet)
+                        self.firedBullets += 1
                         
     def moveBullet(self, otherPlayer):
         for bullet in self.bullets:
@@ -683,6 +720,8 @@ class Player:
                     dy = self.lastDy
 
                 bullet.customMove(dx, dy)
+                
+                
             else:
                 bullet.move()
 
@@ -719,6 +758,7 @@ if p1.weaponclass == "r":
     p1_dps = (1 / weapon_cooldowns["r"]) * bullet_damages["r"]
     print("p1 dps: " + str(p1_dps))
     print("p1 health: " + str(p1.health))
+    print("p1 bpf: " + str(bullet_penetration_factors["r"]))
     
 
 if p2.weaponclass == "r":
@@ -727,6 +767,7 @@ if p2.weaponclass == "r":
     p2_dps = (1 / weapon_cooldowns["r"]) * bullet_damages["r"]
     print("p2 dps: " + str(p2_dps))
     print("p2 health: " + str(p2.health))
+    print("p2 bpf: " + str(bullet_penetration_factors["r"]))
     
     
 while not done:
