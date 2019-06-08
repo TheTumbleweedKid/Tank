@@ -18,13 +18,14 @@ SCREEN_HEIGHT = 1000
 clock = pygame.time.Clock() 
 done = False
 
-cs_pellets = 10
-ps_pellets = 14
+cs_pellets = 12
+ps_pellets = 10
 
 r_burst = 3
 p_burst = 2
 
 rSpeed = uniform(4, 7)
+rHealth = randint(65, 135)
 
 weapon_cooldowns = {
     "smg": 0.065,
@@ -35,7 +36,7 @@ weapon_cooldowns = {
     "ss": 1.5,
     "s": 0.65,
     "cs":0.25,
-    "ps": 0.75,
+    "ps": 0.85,
     "r": uniform(0.01, 0.5),
     "br": 0.35,
     "bp": 0.325,
@@ -54,11 +55,11 @@ weapon_magazines = {
     "s": 10,
     "cs": 14,
     "ps": 8,
-    "r": randint(15, 65),
+    "r": randint(7, 65),
     "br": 10,
     "bp": 7,
     "ft": 900,
-    "D": 10000,
+    "D": 500,
     "td": 3
 }
 
@@ -146,7 +147,7 @@ bullet_speeds = {
 }
 
 bullet_damages = {
-    "smg": 3.5,
+    "smg": 2.5,
     "mg": 5,
     "hmg": 8,
     "t": 1,
@@ -154,8 +155,8 @@ bullet_damages = {
     "ss": 65,
     "s": 35,
     "cs": 3,
-    "ps": 4.75,
-    "r": uniform(0.01, randint(40, 60)),
+    "ps": 10.5,
+    "r": uniform(0.01, randint(10, 90)),
     "br": 5,
     "bp": 4.5,
     "ft": uniform(1, 1.75),
@@ -272,7 +273,7 @@ class Obstacles:
 class Bullet:
     def __init__(self, x, y, dx, dy, weaponclass, x_origin, y_origin):
         self.csbullet_range = 300
-        self.psbullet_range = 560
+        self.psbullet_range = 360
         self.bpbullet_range = 800
         self.ftfire_range = uniform(160, 280)
         self.ftbullet_colour = (uniform(253, 255), uniform(110, 150), uniform(35, 55))
@@ -292,8 +293,8 @@ class Bullet:
             self.dy += uniform(-6, 6)
             
         if weaponclass == "ps":
-            self.dx += uniform(-2.5, 2.5)
-            self.dy += uniform(-2.5, 2.5)
+            self.dx += uniform(-3.5, 3.5)
+            self.dy += uniform(-3.5, 3.5)
             
         if weaponclass == "smg":
             self.dx += uniform(-0.65, 0.65)
@@ -353,7 +354,7 @@ class Bullet:
     def isColliding(self, player):
         if player.isTouchingBullet(self):
             global blood_splatters
-            for i in range(2):
+            for i in range(0, randint(1, 2)):
                 blood_splatters.append(BloodSpatter((randint(177, 200), 11, 11), player.x + 10 + uniform(-18, 18), player.y + 10 + uniform(-18, 18)))
             
             player.health -= self.damage
@@ -400,13 +401,13 @@ class Player:
     def __init__(self, player, x, y, bodycolour, left, right, up, down, fire, weaponclass, x_origin, y_origin):
         self.player = player
         self.isReloading = False
+        
         if self.player == "player1":
             self.playerImg = pygame.image.load(".\TankAssets\GreenSoldier Paint\GreenSoldierDown(Paint).png")
         else:
             self.playerImg = pygame.image.load(".\TankAssets\RedSoldier Paint\RedSoldierDown(Paint).png")
             
-        
-        self.psbullet_range = 560
+        self.psbullet_range = 520
         self.csbullet_range = 300
         self.bpbullet_range = 800
         self.ftfire_range = uniform(140, 160)
@@ -443,7 +444,7 @@ class Player:
         
 
         if self.weaponclass == "ps":
-            self.health = 105
+            self.health = 85
 
         elif self.weaponclass == "cs":
             self.health = 110
@@ -462,7 +463,9 @@ class Player:
             
         elif self.weaponclass == "td":
             self.health = 325
-            
+
+        elif self.weaponclass == "r":
+            self.health = rHealth 
         else:
             self.health = 100
         
@@ -712,15 +715,18 @@ blood_splatters = []
 
 if p1.weaponclass == "r":
     print("p1 dmg: " + str(bullet_damages["r"]))
+    print("p1 fd: " + str(weapon_cooldowns["r"]))
+    p1_dps = (1 / weapon_cooldowns["r"]) * bullet_damages["r"]
+    print("p1 dps: " + str(p1_dps))
+    print("p1 health: " + str(p1.health))
+    
 
 if p2.weaponclass == "r":
     print("p2 dmg: " + str(bullet_damages["r"]))
-
-if p1.weaponclass == "r":
-    print("p1 fd: " + str(weapon_cooldowns["r"]))
-
-if p2.weaponclass == "r":
     print("p2 fd: " + str(weapon_cooldowns["r"]))
+    p2_dps = (1 / weapon_cooldowns["r"]) * bullet_damages["r"]
+    print("p2 dps: " + str(p2_dps))
+    print("p2 health: " + str(p2.health))
     
     
 while not done:
@@ -733,7 +739,6 @@ while not done:
         screenfill = (200, 200, 200)
         screen.fill(screenfill)
         screen.blit(p2victorytext, ((SCREEN_WIDTH / 2) - 180, (SCREEN_HEIGHT / 2) - 40))
-        print("gg 2fez u thot")
         pygame.display.flip()
         clock.tick(1.53846153846)
         done = True
@@ -742,7 +747,6 @@ while not done:
         screenfill = (200, 200, 200)
         screen.fill(screenfill)
         screen.blit(p1victorytext, ((SCREEN_WIDTH / 2) - 200, (SCREEN_HEIGHT / 2) - 40))
-        print("gg 2fez u thot")
         pygame.display.flip()
         clock.tick(1.53846153846)
         done = True
