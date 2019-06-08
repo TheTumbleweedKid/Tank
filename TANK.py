@@ -354,7 +354,7 @@ class Bullet:
         if player.isTouchingBullet(self):
             global blood_splatters
             for i in range(2):
-                blood_splatters.append(BloodSpatter((randint(177, 200), 11, 11), player.x + 10 + uniform(-28, 28), player.y + 10 + uniform(-28, 28)))
+                blood_splatters.append(BloodSpatter((randint(177, 200), 11, 11), player.x + 10 + uniform(-18, 18), player.y + 10 + uniform(-18, 18)))
             
             player.health -= self.damage
             return True
@@ -749,7 +749,7 @@ while not done:
         
     else:
         if p1.health <= 30 and p2.health <= 30:
-            screenfill = (200, 40, 40)
+            screenfill = (229, 58, 58)
         else:
             screenfill = (140, 140, 140)
 
