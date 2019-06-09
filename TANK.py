@@ -167,7 +167,7 @@ bullet_damages = {
 bullet_penetration_factors = {
     "smg": 1.5,
     "mg": 7,
-    "hmg": 10,
+    "hmg": 13,
     "t": 20,
     "n": 0,
     "ss": 75,
@@ -265,18 +265,21 @@ class Obstacle:
         self.health = health
                          
         self.last_hit = 0
-        self.wait_time = 7                 
+        self.wait_time = 7
+    
     def create_obstacle(self):
         pygame.draw.ellipse(screen, self.colour, pygame.Rect(self.x, self.y, 60, 60))
 
     def isTouching(self, other):
-        dist = math.sqrt(((other.x + 20) - (self.x + 30)) ** 2 + ((other.y + 20) - (self.y + 30)) ** 2)
-
         if type(other) == Bullet:
+            dist = math.sqrt(((other.x + 4) - (self.x + 30)) ** 2 + ((other.y + 4) - (self.y + 30)) ** 2)
+
             return dist <= 34
         elif type(other) == Obstacle:
+            dist = math.sqrt(((other.x + 30) - (self.x + 30)) ** 2 + ((other.y + 30) - (self.y + 30)) ** 2)
             return dist <= self.width
         else:
+            dist = math.sqrt(((other.x + 20) - (self.x + 30)) ** 2 + ((other.y + 20) - (self.y + 30)) ** 2)
             return dist <= self.width*0.8
 
 class Obstacles:
@@ -318,7 +321,7 @@ class Bullet:
         self.csbullet_range = 300
         self.psbullet_range = 360
         self.bpbullet_range = 800
-        self.ftfire_range = uniform(160, 280)
+        self.ftfire_range = uniform(130, 310)
         self.ftbullet_colour = (uniform(253, 255), uniform(110, 150), uniform(35, 55))
         self.x = x
         self.y = y
@@ -873,19 +876,14 @@ while not done:
         for obstacle in obstacles.obstacles:
             healthBar(obstacle, (0, 0, 150), obstacle.x, obstacle.y, obstacle.health, 60, 8)  
 
-        if p1.health <= 30:
-            healthBar(p1, (0, 0, 150), p1.x, p1.y, p1.health, 40, 4)
+        for player in [p1, p2]:
+            if player.health <= 30:
+                healthBar(player, (0, 0, 150), player.x, player.y, player.health, 40, 4)
+                
+            else:
+                healthBar(player, player.bodycolour, player.x, player.y, player.health, 40, 4)
 
-        else:
-            healthBar(p1, (0, 100, 0), p1.x, p1.y, p1.health, 40, 4)
-
-        if p2.health <= 30:
-            healthBar(p2, (0, 0, 150), p2.x, p2.y, p2.health, 40, 4)
-                         
-        else:
-            healthBar(p2, (100, 0, 0), p2.x, p2.y, p2.health, 40, 4)
-
-                         
+                      
                          
     pygame.display.flip()
     clock.tick(60)
