@@ -172,7 +172,7 @@ bullet_penetration_factors = {
     "n": 0,
     "ss": 75,
     "s": 25,
-    "cs": 6,
+    "cs": 4,
     "ps": 15,
     "r": uniform(0.01, randint(10, 90)),
     "br": 12.5,
@@ -204,8 +204,7 @@ bulletcolour = (255, 180, 180)
 ft_bulletcolour = (255, 180, 180)
 
 myfont = pygame.font.SysFont("Impact", 80)
-myfont2 = pygame.font.SysFont("Bahnscrift", 5)
-myfont3 = pygame.font.SysFont("Bahnscrift", 40)
+myfont2 = pygame.font.SysFont("Bahnscrift", 40)
 
 p1victorytext = myfont.render("GREEN WINS!", False, (0, 100, 0))
 p2victorytext = myfont.render("RED WINS!", False, (100, 0, 0))
@@ -224,9 +223,24 @@ SCREEN_HEIGHT = screen.get_height()
 def getx():
     x = randrange(20, (SCREEN_WIDTH - 40))
     return x
+
 def gety():
     y = randrange(20, (SCREEN_HEIGHT - 40))
     return y
+
+def recentlyShot(subject, last_hit, wait_time):
+    if time.time() - subject.last_hit <= subject.wait_time:
+        return True
+
+def healthBar(subject, colour, x, y, health, width, adjustment_factor):
+    if recentlyShot(subject, subject.last_hit, subject.wait_time):
+        if type(subject) == Player:
+            pygame.draw.rect(screen, colour, pygame.Rect(x + (width / 2) - ((health / adjustment_factor) / 2), y - 10, health / adjustment_factor, 3)) 
+
+        else:
+            pygame.draw.rect(screen, colour, pygame.Rect(x + (width / 2) - ((health / adjustment_factor) / 2), y - 12, health / adjustment_factor, 5)) 
+
+
 
 class BloodSpatter:
     def __init__(self, colour, x, y):
@@ -243,10 +257,15 @@ class Obstacle:
     def __init__(self, colour, x, y, health):
         self.x = x
         self.y = y
+                         
         self.width = 60
         self.height = 60
+                         
         self.colour = colour
         self.health = health
+                         
+        self.last_hit = 0
+        self.wait_time = 5                 
     def create_obstacle(self):
         pygame.draw.ellipse(screen, self.colour, pygame.Rect(self.x, self.y, 60, 60))
 
@@ -278,13 +297,14 @@ class Obstacles:
  
     def isTouching(self, object):
         for obstacle in self.obstacles:
-            
             if obstacle.isTouching(object):
                 if type(object) == Bullet:
                     obstacle.health -= 1 * bullet_penetration_factors[object.weaponclass]
-
+                    obstacle.last_hit = time.time()
+                    
                 if obstacle.health <= 0:
                     self.obstacles.remove(obstacle)
+                    
                 return True
 
         return False
@@ -381,6 +401,7 @@ class Bullet:
                 blood_splatters.append(BloodSpatter((randint(177, 200), 11, 11), player.x + 10 + uniform(-18, 18), player.y + 10 + uniform(-18, 18)))
             
             player.health -= self.damage
+            player.last_hit = time.time()
             return True
 
         if obstacles.isTouching(self):
@@ -424,12 +445,16 @@ class Bullet:
 class Player:
     def __init__(self, player, x, y, bodycolour, left, right, up, down, fire, weaponclass, x_origin, y_origin):
         self.player = player
+                         
         self.isReloading = False
+                         
+        self.last_hit = 0
+        self.wait_time = 1000
         
         if self.player == "player1":
-            self.playerImg = pygame.image.load(".\TankAssets\GreenSoldier Paint\GreenSoldierDown(Paint).png")
+            self.playerImg = pygame.image.load(".\TankAssets\GreenSoldier Paint\GreenSoldierRight(Paint).png")
         else:
-            self.playerImg = pygame.image.load(".\TankAssets\RedSoldier Paint\RedSoldierDown(Paint).png")
+            self.playerImg = pygame.image.load(".\TankAssets\RedSoldier Paint\RedSoldierRight(Paint).png")
             
         self.psbullet_range = 520
         self.csbullet_range = 300
@@ -464,7 +489,7 @@ class Player:
         
         self.weaponclass = weaponclass
 
-        self.weaponImg = pygame.image.load(r".\\TankAssets\Weapon Paint\\" + str(self.weaponclass).upper() + "\\" + str(self.weaponclass) + " Down.png")
+        self.weaponImg = pygame.image.load(r".\\TankAssets\Weapon Paint\\" + str(self.weaponclass).upper() + "\\" + str(self.weaponclass) + " Right.png")
         
 
         if self.weaponclass == "ps":
@@ -542,6 +567,7 @@ class Player:
             global blood_splatters            
             blood_splatters.append(BloodSpatter((randint(177, 200), 11, 11), self.x + 13.5, self.y + 13.5))
             
+            self.last_hit = time.time()
             self.damage(0.25)
             self.x = self.oldX
             self.y = self.oldY
@@ -824,33 +850,10 @@ while not done:
         p1ammocountstr = str("GREEN AMMO: " + str(p1ammocount))
         p2ammocountstr = str("RED AMMO: " + str(p2ammocount))
 
-        p1healthstr = str()
-        p2healthstr = str()
-        
-        p1healthint = int(p1.health / 1.65)
-        p2healthint = int(p2.health / 1.65)
-        
-        for i in range(0, p1healthint):
-            p1healthstr = str(p1healthstr + "|")
-            
-        for i in range(0, p2healthint):
-            p2healthstr = str(p2healthstr + "|")
-            
-        p1healthtext = myfont2.render(p1healthstr, False, (0, 100, 0))
-        p2healthtext = myfont2.render(p2healthstr, False, (100, 0, 0))
-        
-        p1ammotext = myfont3.render(p1ammocountstr, False, (0, 100, 0))
-        p2ammotext = myfont3.render(p2ammocountstr, False, (100, 0, 0))
+        p1ammotext = myfont2.render(p1ammocountstr, False, (0, 100, 0))
+        p2ammotext = myfont2.render(p2ammocountstr, False, (100, 0, 0))
 
-        if p1.health <= 30 and not p2.health <= 30:
-            p1healthtext = myfont2.render(p1healthstr, False, (0, 0, 150))
         
-        if p2.health <= 30 and not p1.health <= 30:
-            p2healthtext = myfont2.render(p2healthstr, False, (0, 0, 150))
-        
-        screen.blit(p1healthtext, (p1.x - (p1healthint / 6.5), p1.y - 5))
-        screen.blit(p2healthtext, (p2.x - (p2healthint / 6.5), p2.y - 5))
-
         screen.blit(p1ammotext, (SCREEN_WIDTH - 400, 20))
         screen.blit(p2ammotext, (SCREEN_WIDTH - 400, 80))
 
@@ -866,7 +869,24 @@ while not done:
         
         for splatter in blood_splatters:
             splatter.draw()
-        
+                         
+        for obstacle in obstacles.obstacles:
+            healthBar(obstacle, (0, 0, 150), obstacle.x, obstacle.y, obstacle.health, 60, 8)  
+
+        if p1.health <= 30:
+            healthBar(p1, (0, 0, 150), p1.x, p1.y, p1.health, 40, 4)
+
+        else:
+            healthBar(p1, (0, 100, 0), p1.x, p1.y, p1.health, 40, 4)
+
+        if p2.health <= 30:
+            healthBar(p2, (0, 0, 150), p2.x, p2.y, p2.health, 40, 4)
+                         
+        else:
+            healthBar(p2, (100, 0, 0), p2.x, p2.y, p2.health, 40, 4)
+
+                         
+                         
     pygame.display.flip()
     clock.tick(60)
     
