@@ -173,12 +173,12 @@ bullet_penetration_factors = {
     "ss": 75,
     "s": 25,
     "cs": 4,
-    "ps": 15,
+    "ps": 10.5,
     "r": uniform(0.01, randint(10, 90)),
     "br": 12.5,
     "bp": 3.5,
     "ft": uniform(1, 1.75),
-    "D": 1.5,
+    "D": 1,
     "td": 400
 }
 
