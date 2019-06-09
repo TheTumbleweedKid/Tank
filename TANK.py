@@ -265,7 +265,7 @@ class Obstacle:
         self.health = health
                          
         self.last_hit = 0
-        self.wait_time = 5                 
+        self.wait_time = 7                 
     def create_obstacle(self):
         pygame.draw.ellipse(screen, self.colour, pygame.Rect(self.x, self.y, 60, 60))
 
@@ -448,7 +448,7 @@ class Player:
                          
         self.isReloading = False
                          
-        self.last_hit = 0
+        self.last_hit = time.time()
         self.wait_time = 1000
         
         if self.player == "player1":
