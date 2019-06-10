@@ -50,7 +50,6 @@ class WeaponFrame:
         self.add_option("Burst(2)", "bp")
         self.add_option("Flame Thrower", "ft")
         self.add_option("Target Dummy", "td")
-        self.add_option("Grenade Launcher", "gl")
         self.add_option("Dev ONLY", "D")
         
         
@@ -80,7 +79,7 @@ class OptionsGUI:
 
 root = Tk()
 root.title("TANK 3.6.2")
-root.geometry("250x410")
+root.geometry("250x390")
 
 options = OptionsGUI(root)
 
