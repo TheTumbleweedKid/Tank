@@ -20,6 +20,7 @@ done = False
 
 cs_pellets = 12
 ps_pellets = 10
+gl_shellsize = 25
 
 r_burst = 3
 p_burst = 2
@@ -42,7 +43,8 @@ weapon_cooldowns = {
     "bp": 0.325,
     "ft": 0.0000001,
     "D": 0.0005,
-    "td": 5
+    "td": 5,
+    "gl": 1
 }
 
 weapon_magazines = {
@@ -60,7 +62,8 @@ weapon_magazines = {
     "bp": 7 * p_burst,
     "ft": 900,
     "D": 500,
-    "td": 3
+    "td": 3,
+    "gl": 5
 }
 
 weapon_reloads = {
@@ -78,7 +81,8 @@ weapon_reloads = {
     "bp": 1.4,
     "ft": 4,
     "D": 4,
-    "td": 3
+    "td": 3,
+    "gl": 6
 }
 
 player_speeds = {
@@ -125,7 +129,10 @@ player_speeds = {
     "D-low": 7.5,
 
     "td": 4.5,
-    "td-low":5.5,
+    "td-low": 5.5,
+
+    "gl": 5.5,
+    "gl-low": 4.5
 }
 
 bullet_speeds = {
@@ -143,7 +150,8 @@ bullet_speeds = {
     "bp": 15,
     "ft": 8,
     "D": 21,
-    "td": 17
+    "td": 17,
+    "gl": 14
 }
 
 bullet_damages = {
@@ -161,7 +169,8 @@ bullet_damages = {
     "bp": 4.5,
     "ft": uniform(1, 1.75),
     "D": 4.5,
-    "td": 100
+    "td": 100,
+    "gl": 3
 }
 
 bullet_penetration_factors = {
@@ -179,7 +188,8 @@ bullet_penetration_factors = {
     "bp": 3.5,
     "ft": uniform(1, 1.75),
     "D": 1,
-    "td": 400
+    "td": 400,
+    "gl": 2
 }
 
 obstacle_numbers = {
@@ -321,11 +331,14 @@ class Bullet:
         self.csbullet_range = 300
         self.psbullet_range = 360
         self.bpbullet_range = 800
+        
+        self.glshell_range = 400
+        
         self.ftfire_range = uniform(130, 310)
         self.ftbullet_colour = (uniform(253, 255), uniform(110, 150), uniform(35, 55))
         self.x = x
         self.y = y
-        
+
         self.x_origin = x_origin
         self.y_origin = y_origin
         
@@ -386,8 +399,9 @@ class Bullet:
         if self.weaponclass == "ft":
             pygame.draw.ellipse(screen, self.ftbullet_colour, pygame.Rect(self.x, self.y, 14, 14))
             
-        elif self.weaponclass == "ps" or self.weaponclass == "cs":
-            pygame.draw.ellipse(screen, bulletcolour, pygame.Rect(self.x, self.y, 7, 7))   
+        elif self.weaponclass == "ps" or self.weaponclass == "cs" or self.weaponclass == "gl":
+            pygame.draw.ellipse(screen, bulletcolour, pygame.Rect(self.x, self.y, 7, 7))
+            print("gl bullet drawn")
         else:
             pygame.draw.ellipse(screen, bulletcolour, pygame.Rect(self.x, self.y, 8, 8))
 
@@ -416,6 +430,14 @@ class Bullet:
         if math.sqrt(dx**2 + dy**2) >= self.psbullet_range:
             return True
         return False
+
+    def glShell_range(self):
+        dx = (self.x - self.x_origin)
+        dy = (self.y - self.y_origin)
+        if math.sqrt(dx**2 + dy**2) >= self.glshell_range:
+            return True
+        return False
+    
     
     def bp_range(self):
         dx = (self.x - self.x_origin)
@@ -437,7 +459,10 @@ class Bullet:
         if math.sqrt(dx**2 + dy**2) >= self.ftfire_range:
             return True
         return False
-        
+
+    def glExplode(self, otherPlayer):
+        if self.glShell_range() or self.isColliding(otherPlayer):
+            return True
         
     def bulletSpeed(self, x):
         return x * bullet_speeds[self.weaponclass]
@@ -453,6 +478,7 @@ class Player:
                          
         self.last_hit = time.time()
         self.wait_time = 1000
+        self.glshell_range = 100
         
         if self.player == "player1":
             self.playerImg = pygame.image.load(".\TankAssets\GreenSoldier Paint\GreenSoldierRight(Paint).png")
@@ -492,6 +518,11 @@ class Player:
         
         self.weaponclass = weaponclass
 
+        if self.weaponclass == "gl":
+            self.glshell = []
+            print("this ran")
+            
+        
         self.weaponImg = pygame.image.load(r".\\TankAssets\Weapon Paint\\" + str(self.weaponclass).upper() + "\\" + str(self.weaponclass) + " Right.png")
         
 
@@ -528,11 +559,11 @@ class Player:
         
     def damage(self, health):
         self.health -= health
-        
+    
     def move(self, player):
         self.oldX = self.x
         self.oldY = self.y
-        if self.health <= 3:
+        if self.health <= 30:
             self.speed = player_speeds[self.weaponclass + "-low"]
 
         if pressed[self.up]:
@@ -572,6 +603,7 @@ class Player:
             
             self.last_hit = time.time()
             self.damage(0.25)
+            
             self.x = self.oldX
             self.y = self.oldY
 
@@ -681,6 +713,12 @@ class Player:
                             newBullet = Bullet(self.bulletspawn_x, self.bulletspawn_y, dx, dy, self.weaponclass, self.x, self.y)
                             self.bullets.append(newBullet)
                             
+                    elif self.weaponclass == "gl":
+                        self.firedBullets += 1
+                        for i in range(gl_shellsize):
+                            newBullet = Bullet(self.bulletspawn_x, self.bulletspawn_y, dx, dy, self.weaponclass, self.x, self.y)
+                            self.glshell.append(newBullet)
+                            
                             
                     elif self.weaponclass == "br":
                         for i in range(r_burst):
@@ -750,6 +788,12 @@ class Player:
 
                 bullet.customMove(dx, dy)
                 
+            elif self.weaponclass == "gl":
+                    bullet.dx = uniform(-4, 4)
+                    bullet.dy = uniform(-4, 4)
+                    bullet.bulletcolour = (255,154, 0)
+                    bullet.move()
+                    print("this ran")
                 
             else:
                 bullet.move()
