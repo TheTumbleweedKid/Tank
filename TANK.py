@@ -21,6 +21,8 @@ done = False
 cs_pellets = 12
 ps_pellets = 10
 
+gl_shrapnel = 25
+
 r_burst = 3
 p_burst = 2
 
@@ -444,6 +446,61 @@ class Bullet:
 
     def isOutOfBounds(self):
         return ((self.x < 0 or self.x + self.width > SCREEN_WIDTH) or (self.y < 0 or self.y + self.height > SCREEN_HEIGHT))
+
+
+class Grenade:
+    def __init__(self, x, y, dx, dy, x_origin, y_origin, weaponclass):
+        self.weaponclass = "gl"
+
+        self.grenade_range = 300
+        
+        self.x = x
+        self.y = y
+        
+        self.x_origin = x_origin
+        self.y_origin = y_origin
+
+        self.dx = self.bulletSpeed(specialRound(dx))
+        self.dy = self.bulletSpeed(specialRound(dy))
+        
+        self.width = 14
+        self.height = 14
+        
+    def grenadeRange(self):
+        dx = (self.x - self.x_origin)
+        dy = (self.y - self.y_origin)
+        if math.sqrt(dx**2 + dy**2) >= self.grenade_range:
+            return True
+        return False
+    
+    def move(self):
+        self.x += self.dx
+        self.y += self.dy
+        
+        pygame.draw.ellipse(screen, (96, 96, 96), pygame.Rect(self.x, self.y, self.width, self.height))
+
+    def detonate(self, player):
+        if self.grenadeRange:
+            for shrapnel in range(gl_shrapnel):
+                shrapnel.dx = uniform(-4, 4)
+                shrapnel.dy = uniform(-4, 4)
+                
+                newBullet = Bullet(self.x + 7, self.y + 7, shrapnel.dx, shrapnel.dy, "gls", self.x, self.y)
+                player.bullets.append(newBullet)
+    
+    def isColliding(self, player):
+        if player.isTouchingBullet(self):
+            global blood_splatters
+            for i in range(0, randint(1, 2)):
+                blood_splatters.append(BloodSpatter((randint(177, 200), 11, 11), player.x + 10 + uniform(-18, 18), player.y + 10 + uniform(-18, 18)))
+            
+            player.health -= self.damage
+            player.last_hit = time.time()
+            return True
+
+        if obstacles.isTouching(self):
+            return True
+
     
 class Player:
     def __init__(self, player, x, y, bodycolour, left, right, up, down, fire, weaponclass, x_origin, y_origin):
