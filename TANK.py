@@ -44,7 +44,8 @@ weapon_cooldowns = {
     "bp": 0.325,
     "ft": 0.0000001,
     "D": 0.0005,
-    "td": 5
+    "td": 5,
+    "gl": 1
 }
 
 weapon_magazines = {
@@ -62,7 +63,8 @@ weapon_magazines = {
     "bp": 7 * p_burst,
     "ft": 900,
     "D": 500,
-    "td": 3
+    "td": 3,
+    "gl": 4
 }
 
 weapon_reloads = {
@@ -80,7 +82,8 @@ weapon_reloads = {
     "bp": 1.4,
     "ft": 4,
     "D": 4,
-    "td": 3
+    "td": 3,
+    "gl": 4
 }
 
 player_speeds = {
@@ -128,6 +131,9 @@ player_speeds = {
 
     "td": 4.5,
     "td-low":5.5,
+
+    "gl": 5.5,
+    "gl-low": 4.5
 }
 
 bullet_speeds = {
@@ -145,7 +151,9 @@ bullet_speeds = {
     "bp": 15,
     "ft": 8,
     "D": 21,
-    "td": 17
+    "td": 17,
+    "gl": 14,
+    "gls": 3
 }
 
 bullet_damages = {
@@ -163,7 +171,9 @@ bullet_damages = {
     "bp": 4.5,
     "ft": uniform(1, 1.75),
     "D": 4.5,
-    "td": 100
+    "td": 100,
+    "gl": 30,
+    "gls": 3
 }
 
 bullet_penetration_factors = {
@@ -181,7 +191,9 @@ bullet_penetration_factors = {
     "bp": 3.5,
     "ft": uniform(1, 1.75),
     "D": 1,
-    "td": 400
+    "td": 400,
+    "gl": 30,
+    "gls": 3
 }
 
 obstacle_numbers = {
@@ -449,57 +461,44 @@ class Bullet:
 
 
 class Grenade:
-    def __init__(self, x, y, dx, dy, x_origin, y_origin, weaponclass):
-        self.weaponclass = "gl"
-
+    def __init__(self, x, y, dx, dy, player):
         self.grenade_range = 300
+
+        self.player = player
         
         self.x = x
         self.y = y
-        
-        self.x_origin = x_origin
-        self.y_origin = y_origin
 
-        self.dx = self.bulletSpeed(specialRound(dx))
-        self.dy = self.bulletSpeed(specialRound(dy))
+        self.dx = self.bullet_speed(specialRound(dx))
+        self.dy = self.bullet_speed(specialRound(dy))
         
         self.width = 14
         self.height = 14
         
-    def grenadeRange(self):
-        dx = (self.x - self.x_origin)
-        dy = (self.y - self.y_origin)
-        if math.sqrt(dx**2 + dy**2) >= self.grenade_range:
-            return True
-        return False
+        self.damage = bullet_damages[weaponclass]
     
     def move(self):
         self.x += self.dx
         self.y += self.dy
+
+        self.grenade_range -= 1
+        self.detonate()
         
         pygame.draw.ellipse(screen, (96, 96, 96), pygame.Rect(self.x, self.y, self.width, self.height))
 
-    def detonate(self, player):
-        if self.grenadeRange:
+    def detonate(self):
+        if self.grenade_range <= 0:
             for shrapnel in range(gl_shrapnel):
-                shrapnel.dx = uniform(-4, 4)
-                shrapnel.dy = uniform(-4, 4)
+                self.dx = uniform(-4, 4)
+                self.dy = uniform(-4, 4)
                 
-                newBullet = Bullet(self.x + 7, self.y + 7, shrapnel.dx, shrapnel.dy, "gls", self.x, self.y)
-                player.bullets.append(newBullet)
-    
-    def isColliding(self, player):
-        if player.isTouchingBullet(self):
-            global blood_splatters
-            for i in range(0, randint(1, 2)):
-                blood_splatters.append(BloodSpatter((randint(177, 200), 11, 11), player.x + 10 + uniform(-18, 18), player.y + 10 + uniform(-18, 18)))
-            
-            player.health -= self.damage
-            player.last_hit = time.time()
-            return True
+                newBullet = Bullet(self.x + 7, self.y + 7, self.dx, self.dy, "gls", self.x, self.y)
+                self.player.bullets.append(newBullet)
 
-        if obstacles.isTouching(self):
-            return True
+                # TODO: remove the grenade after exploding
+        
+    def bullet_speed(self, x):
+        return x * bullet_speeds[self.weaponclass]
 
     
 class Player:
@@ -511,7 +510,7 @@ class Player:
         self.last_hit = time.time()
         self.wait_time = 1000
         
-        if self.player == "player1":
+        if self.player == "p1":
             self.playerImg = pygame.image.load(".\TankAssets\GreenSoldier Paint\GreenSoldierRight(Paint).png")
         else:
             self.playerImg = pygame.image.load(".\TankAssets\RedSoldier Paint\RedSoldierRight(Paint).png")
@@ -537,6 +536,7 @@ class Player:
         self.bodycolour = bodycolour
         
         self.bullets = []
+        self.grenades = []
         
         self.left = left
         self.right = right
@@ -632,7 +632,7 @@ class Player:
             self.x = self.oldX
             self.y = self.oldY
 
-        if self.player == "player1":
+        if self.player == "p1":
             if (self.dy / self.speed) == 1:
                 self.playerImg = pygame.image.load(".\TankAssets\GreenSoldier Paint\GreenSoldierDown(Paint).png")
                 
@@ -788,7 +788,11 @@ class Player:
                             newBullet = Bullet(self.x, self.y, dx, dy, self.weaponclass, self.x, self.y)
                             self.bullets.append(newBullet)
                             
-                            
+                    elif self.weaponclass == "gl":
+                        newGrenade = Grenade(self.bulletspawn_x, self.bulletspawn_y, dx, dy, self)
+                        self.grenades.append(newGrenade)
+                        self.firedBullets += 1
+                        
                     else:
                         newBullet = Bullet(self.bulletspawn_x, self.bulletspawn_y, dx, dy, self.weaponclass, self.x, self.y)
                         self.bullets.append(newBullet)
@@ -806,13 +810,15 @@ class Player:
                     dy = self.lastDy
 
                 bullet.customMove(dx, dy)
-                
-                
-            else:
-                bullet.move()
 
+            else:
+                bullet.move(otherPlayer)
+            
             if bullet.isColliding(otherPlayer) or bullet.isOutOfBounds() or (self.weaponclass == "cs" and bullet.cs_range()) or (self.weaponclass == "ps" and bullet.ps_range()) or (self.weaponclass == "bp" and bullet.bp_range()) or (self.weaponclass == "ft" and bullet.ft_range()):
                 self.bullets.remove(bullet)
+                
+        for grenade in self.grenades:
+            grenade.move()
 
     def getCooldown(self):
         return time.time() - self.lastFire
@@ -918,8 +924,8 @@ while not done:
         screen.blit(p2ammotext, (SCREEN_WIDTH - 400, 80))
 
         
-        p1.move("player1")
-        p2.move("player2")
+        p1.move("p1")
+        p2.move("p2")
         
         p1.bullet(p1.weaponclass)
         p2.bullet(p2.weaponclass)
