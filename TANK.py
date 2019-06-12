@@ -21,7 +21,7 @@ done = False
 cs_pellets = 12
 ps_pellets = 10
 
-gl_shrapnel = 5
+gl_shrapnel = 25
 
 r_burst = 3
 p_burst = 2
@@ -332,8 +332,8 @@ class Obstacles:
             obstacle.create_obstacle()
             
 
-class Bullet(object):
-    def __init__(self, x, y, dx, dy, weaponclass, x_origin, y_origin):
+class Bullet:
+    def __init__(self, x, y, dx, dy, weaponclass, x_origin, y_origin, round_values=True):
         self.csbullet_range = 300
         self.psbullet_range = 360
         self.bpbullet_range = 800
@@ -349,8 +349,12 @@ class Bullet(object):
         
         self.weaponclass = weaponclass
 
-        self.dx = self.bulletSpeed(specialRound(dx))
-        self.dy = self.bulletSpeed(specialRound(dy))
+        if round_values:
+            self.dx = self.bulletSpeed(specialRound(dx))
+            self.dy = self.bulletSpeed(specialRound(dy))
+        else:
+            self.dx = self.bulletSpeed(dx)
+            self.dy = self.bulletSpeed(dy)
         
         if weaponclass == "cs":
             self.dx += uniform(-6, 6)
@@ -488,6 +492,8 @@ class Grenade(Bullet):
 
         self.weaponclass = "gl"
         self.damage = bullet_damages[self.weaponclass]
+
+        self.has_detonated = False
     
     def move(self):
         self.x += self.dx
@@ -500,13 +506,21 @@ class Grenade(Bullet):
 
     def detonate(self):
         if self.grenade_range <= 0:
-            for shrapnel in range(1, 10):
-                self.dx = 0
-                self.dy = 0
-                
-                newBullet = Bullet(self.x + 7, self.y + 7, (randint(360, 400)/10) - 40, (randint(360, 400)/10) - 40, "gls", self.x, self.y)
+            if not self.has_detonated:
+                self.has_detonated = True
+            else:
+                return
+            
+            self.dx = 0
+            self.dy = 0
+            
+            for shrapnel in range(gl_shrapnel):
+                dx = uniform(-4, 4)
+                dy = uniform(-4, 4)
+
+                newBullet = Bullet(self.x + 7, self.y + 7, dx, dy, "gls", self.x, self.y, round_values=False)
                 self.player.bullets.append(newBullet)
-                shrapnel += 1
+            
             # TODO: remove the grenade after exploding
             
             
