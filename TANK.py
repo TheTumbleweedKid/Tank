@@ -21,7 +21,7 @@ done = False
 cs_pellets = 12
 ps_pellets = 10
 
-gl_shrapnel = 25
+gl_shrapnel = 5
 
 r_burst = 3
 p_burst = 2
@@ -64,7 +64,8 @@ weapon_magazines = {
     "ft": 900,
     "D": 500,
     "td": 3,
-    "gl": 4
+    "gl": 4,
+    "gls": 20
 }
 
 weapon_reloads = {
@@ -329,12 +330,15 @@ class Obstacles:
     def draw(self):
         for obstacle in self.obstacles:
             obstacle.create_obstacle()
+            
 
-class Bullet:
+class Bullet(object):
     def __init__(self, x, y, dx, dy, weaponclass, x_origin, y_origin):
         self.csbullet_range = 300
         self.psbullet_range = 360
         self.bpbullet_range = 800
+        self.gls_range = 50
+        
         self.ftfire_range = uniform(130, 310)
         self.ftbullet_colour = (uniform(253, 255), uniform(110, 150), uniform(35, 55))
         self.x = x
@@ -431,6 +435,13 @@ class Bullet:
             return True
         return False
     
+    def gls_range(self):
+        dx = (self.x - self.x_origin)
+        dy = (self.y - self.y_origin)
+        if math.sqrt(dx**2 + dy**2) >= self.gls_range:
+            return True
+        return False
+    
     def bp_range(self):
         dx = (self.x - self.x_origin)
         dy = (self.y - self.y_origin)
@@ -460,9 +471,9 @@ class Bullet:
         return ((self.x < 0 or self.x + self.width > SCREEN_WIDTH) or (self.y < 0 or self.y + self.height > SCREEN_HEIGHT))
 
 
-class Grenade:
+class Grenade(Bullet):
     def __init__(self, x, y, dx, dy, player):
-        self.grenade_range = 300
+        self.grenade_range = 30
 
         self.player = player
         
@@ -474,8 +485,9 @@ class Grenade:
         
         self.width = 14
         self.height = 14
-        
-        self.damage = bullet_damages[weaponclass]
+
+        self.weaponclass = "gl"
+        self.damage = bullet_damages[self.weaponclass]
     
     def move(self):
         self.x += self.dx
@@ -488,23 +500,23 @@ class Grenade:
 
     def detonate(self):
         if self.grenade_range <= 0:
-            for shrapnel in range(gl_shrapnel):
-                self.dx = uniform(-4, 4)
-                self.dy = uniform(-4, 4)
+            for shrapnel in range(1, 10):
+                self.dx = 0
+                self.dy = 0
                 
-                newBullet = Bullet(self.x + 7, self.y + 7, self.dx, self.dy, "gls", self.x, self.y)
+                newBullet = Bullet(self.x + 7, self.y + 7, (randint(360, 400)/10) - 40, (randint(360, 400)/10) - 40, "gls", self.x, self.y)
                 self.player.bullets.append(newBullet)
-
-                # TODO: remove the grenade after exploding
-        
+                shrapnel += 1
+            # TODO: remove the grenade after exploding
+            
+            
     def bullet_speed(self, x):
-        return x * bullet_speeds[self.weaponclass]
+        return x * bullet_speeds["gl"]
 
     
 class Player:
     def __init__(self, player, x, y, bodycolour, left, right, up, down, fire, weaponclass, x_origin, y_origin):
-        self.player = player
-                         
+        self.player = player                 
         self.isReloading = False
                          
         self.last_hit = time.time()
@@ -512,6 +524,7 @@ class Player:
         
         if self.player == "p1":
             self.playerImg = pygame.image.load(".\TankAssets\GreenSoldier Paint\GreenSoldierRight(Paint).png")
+            
         else:
             self.playerImg = pygame.image.load(".\TankAssets\RedSoldier Paint\RedSoldierRight(Paint).png")
             
@@ -519,6 +532,7 @@ class Player:
         self.csbullet_range = 300
         self.bpbullet_range = 800
         self.ftfire_range = uniform(140, 160)
+        self.gls_range = 50
         self.x = x
         self.y = y
 
@@ -812,14 +826,17 @@ class Player:
                 bullet.customMove(dx, dy)
 
             else:
-                bullet.move(otherPlayer)
+                bullet.move()
             
-            if bullet.isColliding(otherPlayer) or bullet.isOutOfBounds() or (self.weaponclass == "cs" and bullet.cs_range()) or (self.weaponclass == "ps" and bullet.ps_range()) or (self.weaponclass == "bp" and bullet.bp_range()) or (self.weaponclass == "ft" and bullet.ft_range()):
+            if bullet.isColliding(otherPlayer) or bullet.isOutOfBounds() or (self.weaponclass == "cs" and bullet.cs_range()) or (self.weaponclass == "ps" and bullet.ps_range()) or (self.weaponclass == "bp" and bullet.bp_range()) or (self.weaponclass == "ft" and bullet.ft_range()) or (self.weaponclass == "gls" and bullet.gls_range()):
                 self.bullets.remove(bullet)
                 
         for grenade in self.grenades:
             grenade.move()
 
+            if grenade.isColliding(otherPlayer) or grenade.isOutOfBounds():
+                self.grenades.remove(grenade)
+                
     def getCooldown(self):
         return time.time() - self.lastFire
 
@@ -839,8 +856,8 @@ class Player:
             dist = math.sqrt(((bullet.x + 8) - (self.x + 20)) ** 2 + ((bullet.y + 8) - (self.y + 20)) ** 2)
             return dist <= 20
 
-p1 = Player("player1", 40, 40, (0, 100, 0), pygame.K_LEFT, pygame.K_RIGHT, pygame.K_UP, pygame.K_DOWN, pygame.K_SLASH, TankOptions.player1_weapon.value, 0, 0)
-p2 = Player("player2", 1460, 960, (100, 0, 0), pygame.K_a, pygame.K_d, pygame.K_w, pygame.K_s, pygame.K_q, TankOptions.player2_weapon.value, 0, 0)
+p1 = Player("p1", 40, 40, (0, 100, 0), pygame.K_LEFT, pygame.K_RIGHT, pygame.K_UP, pygame.K_DOWN, pygame.K_SLASH, TankOptions.player1_weapon.value, 0, 0)
+p2 = Player("p2", 1460, 960, (100, 0, 0), pygame.K_a, pygame.K_d, pygame.K_w, pygame.K_s, pygame.K_q, TankOptions.player2_weapon.value, 0, 0)
 obstacles = Obstacles(TankOptions.obstacles_frame.value)
 blood_splatters = []
 
