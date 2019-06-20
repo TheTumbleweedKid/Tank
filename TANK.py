@@ -21,7 +21,7 @@ done = False
 cs_pellets = 12
 ps_pellets = 10
 
-gl_shrapnel = 25
+gl_shrapnel = 65
 
 r_burst = 3
 p_burst = 2
@@ -337,7 +337,7 @@ class Bullet:
         self.csbullet_range = 300
         self.psbullet_range = 360
         self.bpbullet_range = 800
-        self.gls_range = 50
+        self.gls_range = 100
         
         self.ftfire_range = uniform(130, 310)
         self.ftbullet_colour = (uniform(253, 255), uniform(110, 150), uniform(35, 55))
@@ -409,7 +409,10 @@ class Bullet:
             pygame.draw.ellipse(screen, self.ftbullet_colour, pygame.Rect(self.x, self.y, 14, 14))
             
         elif self.weaponclass == "ps" or self.weaponclass == "cs":
-            pygame.draw.ellipse(screen, bulletcolour, pygame.Rect(self.x, self.y, 7, 7))   
+            pygame.draw.ellipse(screen, bulletcolour, pygame.Rect(self.x, self.y, 7, 7))
+
+        elif self.weaponclass == "gls":
+            pygame.draw.ellipse(screen, (255, 187, 17), pygame.Rect(self.x, self.y, 8, 8))
         else:
             pygame.draw.ellipse(screen, bulletcolour, pygame.Rect(self.x, self.y, 8, 8))
 
@@ -495,17 +498,17 @@ class Grenade(Bullet):
 
         self.has_detonated = False
     
-    def move(self):
+    def move(self, otherPlayer):
         self.x += self.dx
         self.y += self.dy
 
         self.grenade_range -= 1
-        self.detonate()
+        self.detonate(otherPlayer)
         
         pygame.draw.ellipse(screen, (96, 96, 96), pygame.Rect(self.x, self.y, self.width, self.height))
 
-    def detonate(self):
-        if self.grenade_range <= 0:
+    def detonate(self, otherPlayer):
+        if self.grenade_range <= 0 or self.isColliding(otherPlayer):
             if not self.has_detonated:
                 self.has_detonated = True
             else:
@@ -522,7 +525,7 @@ class Grenade(Bullet):
                 self.player.bullets.append(newBullet)
             
             # TODO: remove the grenade after exploding
-            
+            self.player.grenades.remove(self)
             
     def bullet_speed(self, x):
         return x * bullet_speeds["gl"]
@@ -846,7 +849,7 @@ class Player:
                 self.bullets.remove(bullet)
                 
         for grenade in self.grenades:
-            grenade.move()
+            grenade.move(otherPlayer)
 
             if grenade.isColliding(otherPlayer) or grenade.isOutOfBounds():
                 self.grenades.remove(grenade)
