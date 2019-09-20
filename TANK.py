@@ -337,7 +337,7 @@ class Bullet:
         self.csbullet_range = 300
         self.psbullet_range = 360
         self.bpbullet_range = 800
-        self.gls_range = 100
+        self.gls_range = 20
         
         self.ftfire_range = uniform(130, 310)
         self.ftbullet_colour = (uniform(253, 255), uniform(110, 150), uniform(35, 55))
@@ -851,8 +851,6 @@ class Player:
         for grenade in self.grenades:
             grenade.move(otherPlayer)
 
-            if grenade.isColliding(otherPlayer) or grenade.isOutOfBounds():
-                self.grenades.remove(grenade)
                 
     def getCooldown(self):
         return time.time() - self.lastFire
