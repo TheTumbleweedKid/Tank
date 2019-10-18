@@ -173,7 +173,7 @@ bullet_damages = {
     "ft": uniform(1, 1.75),
     "D": 4.5,
     "td": 100,
-    "gl": 20,
+    "gl": 5,
     "gls": 1.5
 }
 
@@ -337,7 +337,7 @@ class Bullet:
         self.csbullet_range = 300
         self.psbullet_range = 360
         self.bpbullet_range = 800
-        self.gls_range_value = 50
+        self.gls_range_value = 120
         
         self.ftfire_range = uniform(130, 310)
         self.ftbullet_colour = (uniform(253, 255), uniform(110, 150), uniform(35, 55))
