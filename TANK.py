@@ -46,7 +46,7 @@ weapon_cooldowns = {
     "D": 0.0005,
     "td": 5,
     "gl": 1,
-    "mng": 0.045
+    "mng": 0.0035
 }
 
 weapon_magazines = {
@@ -149,8 +149,8 @@ bullet_speeds = {
     "hmg": 10,
     "t": 0,
     "n": 6,
-    "ss": 19,
-    "s": 16.5,
+    "ss": 23,
+    "s": 20.5,
     "cs": 18,
     "ps": 19,
     "r": randint(5, 19),
@@ -176,7 +176,7 @@ bullet_damages = {
     "ps": 10.5,
     "r": uniform(0.01, randint(10, 90)),
     "br": 12.5,
-    "bp": 4.5,
+    "bp": 7.5,
     "ft": uniform(1, 1.75),
     "D": 4.5,
     "td": 100,
@@ -599,16 +599,18 @@ class Player:
         
 
         if self.weaponclass == "ps":
-            self.health = 85
+            self.health = 92.5
 
         elif self.weaponclass == "cs":
             self.health = 110
 
         elif self.weaponclass == "s":
-            self.health = 85
+            self.health = 75
 
+        elif self.weaponclass == "br":
+            self.health = 95
         elif self.weaponclass == "bp":
-            self.health = 120
+            self.health = 131
 
         elif self.weaponclass == "ft":
             self.health = 105
@@ -620,7 +622,11 @@ class Player:
             self.health = 325
 
         elif self.weaponclass == "r":
-            self.health = rHealth 
+            self.health = rHealth
+
+        elif self.weaponclass == "mng":
+            self.health = 142
+            
         else:
             self.health = 100
         
@@ -789,12 +795,12 @@ class Player:
                     elif self.weaponclass == "br":
                         for i in range(r_burst):
                             if dy == 0:
-                                newBullet = Bullet(self.bulletspawn_x - 14 * (i - 1), self.bulletspawn_y, dx, dy, self.weaponclass, self.x, self.y)
+                                newBullet = Bullet(self.bulletspawn_x - 19 * (i - 1), self.bulletspawn_y, dx, dy, self.weaponclass, self.x, self.y)
                                 self.bullets.append(newBullet)
                                 self.firedBullets += 1
                                 
                             elif dx == 0:
-                                newBullet = Bullet(self.bulletspawn_x, self.bulletspawn_y - 14 * (i - 1), dx, dy, self.weaponclass, self.x, self.y)
+                                newBullet = Bullet(self.bulletspawn_x, self.bulletspawn_y - 19 * (i - 1), dx, dy, self.weaponclass, self.x, self.y)
                                 self.bullets.append(newBullet)
                                 self.firedBullets += 1
 
