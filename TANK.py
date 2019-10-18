@@ -67,7 +67,7 @@ weapon_magazines = {
     "td": 3,
     "gl": 4,
     "gls": 20,
-    "mng": 45
+    "mng": 85
 }
 
 weapon_reloads = {
@@ -380,35 +380,35 @@ class Bullet:
             self.dx += uniform(-0.65, 0.65)
             self.dy += uniform(-0.65, 0.65)
             
-        elif weaponclass == "mg":
+        if weaponclass == "mg":
             self.dx += uniform(-0.19, 0.19)
             self.dy += uniform(-0.19, 0.19)
 
-        elif weaponclass == "mng":
+        if weaponclass == "mng":
             self.dx += uniform(-0.45, 0.45)
             self.dy += uniform(-0.45, 0.45)
             
-        elif weaponclass == "br":
+        if weaponclass == "br":
             self.dx += uniform(-0.1, 0.1)
             self.dy += uniform(-0.1, 0.1)
             
-        elif weaponclass == "s":
+        if weaponclass == "s":
             self.dx += uniform(-0.05, 0.05)
             self.dy += uniform(-0.05, 0.05)
             
-        elif weaponclass == "ft":
+        if weaponclass == "ft":
             self.dx += uniform(-2, 2)
             self.dy += uniform(-2, 2)
-
-        elif weaponclass == "r":
+            
+        if weaponclass == "r":
             self.dx += uniform(-uniform(0, 3), uniform(0, 3))
             self.dy += uniform(-uniform(0, 3), uniform(0, 3))
 
-        elif weaponclass == "D":
+        if weaponclass == "D":
             self.dx += uniform(-uniform(0, 1.25), uniform(0, 1.25))
             self.dy += uniform(-uniform(0, 1.25), uniform(0, 1.25))
-            
-        elif self.weaponclass == "ft":
+
+        if weaponclass == "ft":
             self.damage = uniform(1, 1.75)
             
         else:
