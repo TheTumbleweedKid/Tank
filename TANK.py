@@ -45,7 +45,8 @@ weapon_cooldowns = {
     "ft": 0.0000001,
     "D": 0.0005,
     "td": 5,
-    "gl": 1
+    "gl": 1,
+    "mng": 0.045
 }
 
 weapon_magazines = {
@@ -65,7 +66,8 @@ weapon_magazines = {
     "D": 500,
     "td": 3,
     "gl": 4,
-    "gls": 20
+    "gls": 20,
+    "mng": 45
 }
 
 weapon_reloads = {
@@ -84,7 +86,8 @@ weapon_reloads = {
     "ft": 4,
     "D": 4,
     "td": 3,
-    "gl": 4
+    "gl": 4,
+    "mng": 5
 }
 
 player_speeds = {
@@ -134,7 +137,10 @@ player_speeds = {
     "td-low":5.5,
 
     "gl": 5.5,
-    "gl-low": 4.5
+    "gl-low": 4.5,
+
+    "mng": 3.5,
+    "mng-low": 3
 }
 
 bullet_speeds = {
@@ -154,7 +160,8 @@ bullet_speeds = {
     "D": 21,
     "td": 17,
     "gl": 14,
-    "gls": 3
+    "gls": 3,
+    "mng": 14
 }
 
 bullet_damages = {
@@ -174,7 +181,8 @@ bullet_damages = {
     "D": 4.5,
     "td": 100,
     "gl": 5,
-    "gls": 1.5
+    "gls": 1.5,
+    "mng": 2.1
 }
 
 bullet_penetration_factors = {
@@ -194,7 +202,8 @@ bullet_penetration_factors = {
     "D": 1,
     "td": 400,
     "gl": 30,
-    "gls": 3
+    "gls": 3,
+    "mng": 3.6
 }
 
 obstacle_numbers = {
@@ -337,7 +346,7 @@ class Bullet:
         self.csbullet_range = 300
         self.psbullet_range = 360
         self.bpbullet_range = 800
-        self.gls_range_value = 120
+        self.gls_range_value = uniform(95, 120)
         
         self.ftfire_range = uniform(130, 310)
         self.ftbullet_colour = (uniform(253, 255), uniform(110, 150), uniform(35, 55))
@@ -363,39 +372,43 @@ class Bullet:
             self.dx += uniform(-6, 6)
             self.dy += uniform(-6, 6)
             
-        if weaponclass == "ps":
+        elif weaponclass == "ps":
             self.dx += uniform(-3.5, 3.5)
             self.dy += uniform(-3.5, 3.5)
             
-        if weaponclass == "smg":
+        elif weaponclass == "smg":
             self.dx += uniform(-0.65, 0.65)
             self.dy += uniform(-0.65, 0.65)
             
-        if weaponclass == "mg":
+        elif weaponclass == "mg":
             self.dx += uniform(-0.19, 0.19)
             self.dy += uniform(-0.19, 0.19)
+
+        elif weaponclass == "mng":
+            self.dx += uniform(-0.45, 0.45)
+            self.dy += uniform(-0.45, 0.45)
             
-        if weaponclass == "br":
+        elif weaponclass == "br":
             self.dx += uniform(-0.1, 0.1)
             self.dy += uniform(-0.1, 0.1)
             
-        if weaponclass == "s":
+        elif weaponclass == "s":
             self.dx += uniform(-0.05, 0.05)
             self.dy += uniform(-0.05, 0.05)
             
-        if weaponclass == "ft":
+        elif weaponclass == "ft":
             self.dx += uniform(-2, 2)
             self.dy += uniform(-2, 2)
 
-        if weaponclass == "r":
+        elif weaponclass == "r":
             self.dx += uniform(-uniform(0, 3), uniform(0, 3))
             self.dy += uniform(-uniform(0, 3), uniform(0, 3))
 
-        if weaponclass == "D":
+        elif weaponclass == "D":
             self.dx += uniform(-uniform(0, 1.25), uniform(0, 1.25))
             self.dy += uniform(-uniform(0, 1.25), uniform(0, 1.25))
             
-        if self.weaponclass == "ft":
+        elif self.weaponclass == "ft":
             self.damage = uniform(1, 1.75)
             
         else:
