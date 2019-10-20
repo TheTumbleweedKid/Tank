@@ -23,11 +23,33 @@ ps_pellets = 10
 
 gl_shrapnel = 65
 
-r_burst = 3
-p_burst = 2
+g_shrapnel = 42
+
+br_burst = 3
+bp_burst = 2
 
 rSpeed = uniform(4, 7)
 rHealth = randint(65, 135)
+
+weapon_grenade_count = {
+    "smg": 2,
+    "mg": 2,
+    "hmg": 4,
+    "t": 3,
+    "n": 0,
+    "ss": 1,
+    "s": 3,
+    "cs": 3,
+    "ps": 2,
+    "r": randint(0, 4),
+    "br": 2,
+    "bp": 4,
+    "ft": 2,
+    "D": 7,
+    "td": 3,
+    "gl": 0,
+    "mng": 4
+}
 
 weapon_cooldowns = {
     "smg": 0.065,
@@ -46,7 +68,8 @@ weapon_cooldowns = {
     "D": 0.0005,
     "td": 5,
     "gl": 1,
-    "mng": 0.0035
+    "mng": 0.0035,
+    "g": 2
 }
 
 weapon_magazines = {
@@ -60,8 +83,8 @@ weapon_magazines = {
     "cs": 14,
     "ps": 8,
     "r": randint(7, 65),
-    "br": 10 * r_burst,
-    "bp": 7 * p_burst,
+    "br": 10 * br_burst,
+    "bp": 7 * bp_burst,
     "ft": 900,
     "D": 500,
     "td": 3,
@@ -161,7 +184,8 @@ bullet_speeds = {
     "td": 17,
     "gl": 14,
     "gls": 3,
-    "mng": 14
+    "mng": 14,
+    "g": 8
 }
 
 bullet_damages = {
@@ -182,7 +206,8 @@ bullet_damages = {
     "td": 100,
     "gl": 5,
     "gls": 1.5,
-    "mng": 2.1
+    "mng": 2.1,
+    "g": 3
 }
 
 bullet_penetration_factors = {
@@ -201,9 +226,10 @@ bullet_penetration_factors = {
     "ft": uniform(1, 1.75),
     "D": 1,
     "td": 400,
-    "gl": 30,
-    "gls": 3,
-    "mng": 3.6
+    "gl": 70,
+    "gls": 7,
+    "mng": 3.6,
+    "g": 6
 }
 
 obstacle_numbers = {
@@ -351,11 +377,10 @@ class Obstacles:
             
 
 class Bullet:
-    def __init__(self, x, y, dx, dy, weaponclass, x_origin, y_origin, round_values=True):
+    def __init__(self, x, y, dx, dy, weaponclass, x_origin, y_origin, grenade_type="not gl",  round_values=True):
         self.csbullet_range = 300
         self.psbullet_range = 360
         self.bpbullet_range = 800
-        self.gls_range_value = uniform(95, uniform(114, uniform(120, uniform(146, 180))))
         
         self.ftfire_range = uniform(130, 310)
         self.ftbullet_colour = (uniform(253, 255), uniform(110, 150), uniform(35, 55))
@@ -369,6 +394,14 @@ class Bullet:
         self.y_origin = y_origin
         
         self.weaponclass = weaponclass
+
+        self.grenade_type = grenade_type
+
+        if self.grenade_type == "gl":
+            self.gls_range_value = uniform(95, uniform(114, uniform(120, uniform(146, 180))))
+            
+        else:
+            self.gls_range_value = uniform(85, uniform(99, uniform(110, uniform(126, 160))))
 
         if round_values:
             self.dx = self.bulletSpeed(specialRound(dx))
@@ -472,10 +505,11 @@ class Bullet:
         return False
     
     def gls_range(self):
-        dx = (self.x - self.x_origin)
-        dy = (self.y - self.y_origin)
-        if math.sqrt(dx**2 + dy**2) >= self.gls_range_value:
-            return True
+        if self.weaponclass == "gls":
+            dx = (self.x - self.x_origin)
+            dy = (self.y - self.y_origin)
+            if math.sqrt(dx**2 + dy**2) >= self.gls_range_value:
+                return True
         return False
     
     def bp_range(self):
@@ -516,26 +550,44 @@ class Grenade(Bullet):
         self.x = x
         self.y = y
 
-        self.dx = self.bullet_speed(specialRound(dx))
-        self.dy = self.bullet_speed(specialRound(dy))
-        
+        self.dx = dx
+        self.dy = dy
+
         self.width = 14
         self.height = 14
 
-        self.weaponclass = "gl"
-        self.damage = bullet_damages[self.weaponclass]
+        if self.player.weaponclass == "gl":
+            self.weaponclass = "gl"
 
+        else:
+            self.weaponclass = "g"
+    
+        self.damage = bullet_damages[self.weaponclass]
+        
+        self.grenade_movement_rate = bullet_speeds[self.weaponclass]
+        
         self.has_detonated = False
     
     def move(self, otherPlayer):
+        self.dx = self.grenade_speed(specialRound(self.dx))
+        self.dy = self.grenade_speed(specialRound(self.dy))
+        
         self.x += self.dx
         self.y += self.dy
 
         self.grenade_range -= 1
-        if self.grenade_range <= 0 or self.isColliding(otherPlayer) or self.isOutOfBounds():
+    
+        if self.weaponclass == "g":
+            self.grenade_movement_rate -= 0.05
+    
+        if self.grenade_range <= 0 or self.grenade_movement_rate <= 0 or self.isColliding(otherPlayer) or self.isOutOfBounds():
             self.detonate()
-        
-        pygame.draw.ellipse(screen, (96, 96, 96), pygame.Rect(self.x, self.y, self.width, self.height))
+
+        if self.weaponclass == "gl":
+            pygame.draw.ellipse(screen, (96, 96, 96), pygame.Rect(self.x, self.y, self.width, self.height))
+
+        else:
+            pygame.draw.ellipse(screen, (106, 122, 90), pygame.Rect(self.x, self.y, self.width, self.height))
 
     def detonate(self):
         if not self.has_detonated:
@@ -545,22 +597,31 @@ class Grenade(Bullet):
         
         self.dx = 0
         self.dy = 0
-        
-        for shrapnel in range(gl_shrapnel):
-            self.dx = uniform(-4, 4)
-            self.dy = uniform(-4, 4)
+    
+        if self.weaponclass == "gl":
+            for shrapnel in range(gl_shrapnel):
+                self.dx = uniform(-4, 4)
+                self.dy = uniform(-4, 4)
 
-            newBullet = Bullet(self.x + 3, self.y + 3, self.dx, self.dy, "gls", self.x + 3, self.y + 3, round_values=False)
-            self.player.bullets.append(newBullet)
+                newBullet = Bullet(self.x + 3, self.y + 3, self.dx, self.dy, "gls", self.x + 3, self.y + 3, "gl", round_values=False)
+                self.player.bullets.append(newBullet)
+                
+        else:
+            for shrapnel in range(g_shrapnel):
+                self.dx = uniform(-4, 4)
+                self.dy = uniform(-4, 4)
 
+                newBullet = Bullet(self.x + 3, self.y + 3, self.dx, self.dy, "gls", self.x + 3, self.y + 3, round_values=False)
+                self.player.bullets.append(newBullet)
+    
         self.player.grenades.remove(self)
             
-    def bullet_speed(self, x):
-        return x * bullet_speeds["gl"]
+    def grenade_speed(self, x):
+        return x * self.grenade_movement_rate
 
     
 class Player:
-    def __init__(self, player, x, y, bodycolour, left, right, up, down, fire, weaponclass, x_origin, y_origin):
+    def __init__(self, player, x, y, bodycolour, left, right, up, down, fire, throw, weaponclass, x_origin, y_origin):
         self.player = player                 
         self.isReloading = False
                          
@@ -577,6 +638,7 @@ class Player:
         self.csbullet_range = 300
         self.bpbullet_range = 800
         self.ftfire_range = uniform(140, 160)
+        
         self.x = x
         self.y = y
 
@@ -601,6 +663,7 @@ class Player:
         self.up = up
         self.down = down
         self.fire = fire
+        self.throw = throw
 
         self.oldX = 0
         self.oldY = 0
@@ -644,8 +707,13 @@ class Player:
             self.health = 100
         
         self.lastFire = 0
+        self.lastThrow = 0
+    
         self.startReload = 0
+    
         self.firedBullets = 0
+        self.thrownGrenades = 0
+    
         self.speed = player_speeds[weaponclass]
         
     def damage(self, health):
@@ -654,7 +722,7 @@ class Player:
     def move(self, player):
         self.oldX = self.x
         self.oldY = self.y
-        if self.health <= 3:
+        if self.health <= 30:
             self.speed = player_speeds[self.weaponclass + "-low"]
 
         if pressed[self.up]:
@@ -753,6 +821,10 @@ class Player:
             self.isReloading = True
             self.firedBullets = 0
             return True
+    
+    def outOfGrenades(self):
+        if self.thrownGrenades == weapon_grenade_count[self.weaponclass]:
+            return True
 
     def reloaded(self, weaponclass):
         if self.getReloadTime() >= weapon_reloads[weaponclass]:
@@ -767,7 +839,6 @@ class Player:
         if (not self.outOfAmmo(self.weaponclass)) and self.reloaded(self.weaponclass):
             self.isReloading = False
 
-              
         if pressed[self.fire]:
             if (self.getCooldown() > weapon_cooldowns[self.weaponclass]) and (not self.outOfAmmo(self.weaponclass)) and self.reloaded(self.weaponclass):
                     self.lastFire = time.time()
@@ -809,7 +880,7 @@ class Player:
                             
                             
                     elif self.weaponclass == "br":
-                        for i in range(r_burst):
+                        for i in range(br_burst):
                             if dy == 0:
                                 newBullet = Bullet(self.bulletspawn_x - 19 * (i - 1), self.bulletspawn_y, dx, dy, self.weaponclass, self.x, self.y)
                                 self.bullets.append(newBullet)
@@ -821,7 +892,7 @@ class Player:
                                 self.firedBullets += 1
 
                     elif self.weaponclass == "bp":
-                        for i in range(p_burst):
+                        for i in range(bp_burst):
                             if dy == 0:
                                 newBullet = Bullet(self.bulletspawn_x - 16 * (i - 1), self.bulletspawn_y, dx, dy, self.weaponclass, self.x, self.y)
                                 self.bullets.append(newBullet)
@@ -866,7 +937,39 @@ class Player:
                         newBullet = Bullet(self.bulletspawn_x, self.bulletspawn_y, dx, dy, self.weaponclass, self.x, self.y)
                         self.bullets.append(newBullet)
                         self.firedBullets += 1
+    
+        elif pressed[self.throw]:
+            if (self.getGrenadeCooldown() > weapon_cooldowns["g"]) and (not self.outOfGrenades()):
+                    self.lastThrow = time.time()
+    
+                    dx = self.dx
+                    dy = self.dy
+    
+                    if dx == 0:
+                        dx = self.lastDx
+                    if dy == 0:
+                        dy = self.lastDy
                         
+                    if dy >= 1:
+                        self.bulletspawn_x = self.x + 30
+                        self.bulletspawn_y = self.y + 30
+                        
+                    elif dy <= -1:
+                        self.bulletspawn_x = self.x
+                        self.bulletspawn_y = self.y
+                        
+                    elif dx >= 1:
+                        self.bulletspawn_x = self.x + 30
+                        self.bulletspawn_y = self.y
+                        
+                    elif dx <= -1:
+                        self.bulletspawn_x = self.x
+                        self.bulletspawn_y = self.y + 30
+    
+                    newGrenade = Grenade(self.bulletspawn_x, self.bulletspawn_y, dx, dy, self)
+                    self.grenades.append(newGrenade)
+                    self.thrownGrenades += 1
+                    
     def moveBullet(self, otherPlayer):
         for bullet in self.bullets:
             if self.weaponclass == "n":
@@ -883,8 +986,9 @@ class Player:
             else:
                 bullet.move()
             
-            if bullet.isColliding(otherPlayer) or bullet.isOutOfBounds() or (self.weaponclass == "cs" and bullet.cs_range()) or (self.weaponclass == "ps" and bullet.ps_range()) or (self.weaponclass == "bp" and bullet.bp_range()) or (self.weaponclass == "ft" and bullet.ft_range()) or (self.weaponclass == "gl" and bullet.gls_range()):
+            if bullet.isColliding(otherPlayer) or bullet.isOutOfBounds() or (self.weaponclass == "cs" and bullet.cs_range()) or (self.weaponclass == "ps" and bullet.ps_range()) or (self.weaponclass == "bp" and bullet.bp_range()) or (self.weaponclass == "ft" and bullet.ft_range()) or bullet.gls_range():
                 self.bullets.remove(bullet)
+
 
                 
         for grenade in self.grenades:
@@ -894,6 +998,9 @@ class Player:
                 
     def getCooldown(self):
         return time.time() - self.lastFire
+    
+    def getGrenadeCooldown(self):
+        return time.time() - self.lastThrow
 
     def isDead(self):
         return self.health <= 0
@@ -911,8 +1018,8 @@ class Player:
             dist = math.sqrt(((bullet.x + 8) - (self.x + 20)) ** 2 + ((bullet.y + 8) - (self.y + 20)) ** 2)
             return dist <= 20
 
-p1 = Player("p1", 40, 40, (0, 100, 0), pygame.K_LEFT, pygame.K_RIGHT, pygame.K_UP, pygame.K_DOWN, pygame.K_SLASH, TankOptions.player1_weapon.value, 0, 0)
-p2 = Player("p2", 1460, 960, (100, 0, 0), pygame.K_a, pygame.K_d, pygame.K_w, pygame.K_s, pygame.K_q, TankOptions.player2_weapon.value, 0, 0)
+p1 = Player("p1", 40, 40, (0, 100, 0), pygame.K_LEFT, pygame.K_RIGHT, pygame.K_UP, pygame.K_DOWN, pygame.K_SLASH, pygame.K_PERIOD, TankOptions.player1_weapon.value, 0, 0)
+p2 = Player("p2", 1460, 960, (100, 0, 0), pygame.K_a, pygame.K_d, pygame.K_w, pygame.K_s, pygame.K_q, pygame.K_e, TankOptions.player2_weapon.value, 0, 0)
 obstacles = Obstacles(TankOptions.obstacles_frame.value)
 blood_splatters = []
 
