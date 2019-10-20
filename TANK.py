@@ -67,7 +67,7 @@ weapon_magazines = {
     "td": 3,
     "gl": 4,
     "gls": 20,
-    "mng": 85
+    "mng": 150
 }
 
 weapon_reloads = {
@@ -262,8 +262,14 @@ def healthBar(subject, colour, x, y, health, width, adjustment_factor):
             pygame.draw.rect(screen, colour, pygame.Rect(x + (width / 2) - ((health / adjustment_factor) / 2), y - 10, health / adjustment_factor, 3)) 
 
         else:
-            pygame.draw.rect(screen, colour, pygame.Rect(x + (width / 2) - ((health / adjustment_factor) / 2), y - 12, health / adjustment_factor, 5)) 
+            if subject.width <= 56:
+                pygame.draw.rect(screen, colour, pygame.Rect(x + (width / 2) - ((health / (adjustment_factor * 0.6)) / 2), y - 12, health / adjustment_factor, 5)) 
 
+            elif subject.width <= 64:
+                pygame.draw.rect(screen, colour, pygame.Rect(x + (width / 2) - ((health / (adjustment_factor)) / 2), y - 12, health / adjustment_factor, 5))
+
+            else:
+                pygame.draw.rect(screen, colour, pygame.Rect(x + (width / 2) - ((health / (adjustment_factor * 1.2)) / 2), y - 12, health / adjustment_factor, 5))
 
 
 class BloodSpatter:
@@ -277,33 +283,36 @@ class BloodSpatter:
     def draw(self):
         pygame.draw.ellipse(screen, self.colour, pygame.Rect(self.x, self.y, self.width, self.height))
 
+
 class Obstacle:
-    def __init__(self, colour, x, y, health):
+    def __init__(self, colour, x, y):
         self.x = x
         self.y = y
-                         
-        self.width = 60
-        self.height = 60
+        
+        self.radius = uniform(20, uniform(32, 40)) 
+        self.width = 2 * self.radius
+        self.height = 2 * self.radius
                          
         self.colour = colour
-        self.health = health
+        self.health = (self.radius / 30) * 400
                          
         self.last_hit = 0
         self.wait_time = 7
     
     def create_obstacle(self):
-        pygame.draw.ellipse(screen, self.colour, pygame.Rect(self.x, self.y, 60, 60))
+        pygame.draw.ellipse(screen, self.colour, pygame.Rect(self.x, self.y, self.width, self.height))
 
     def isTouching(self, other):
         if type(other) == Bullet:
-            dist = math.sqrt(((other.x + 4) - (self.x + 30)) ** 2 + ((other.y + 4) - (self.y + 30)) ** 2)
-
-            return dist <= 34
+            dist = math.sqrt(((other.x + (other.width / 2)) - (self.x + self.radius)) ** 2 + ((other.y + (other.height / 2)) - (self.y + self.radius)) ** 2)
+            return dist <= (self.radius + 4)
+        
         elif type(other) == Obstacle:
-            dist = math.sqrt(((other.x + 30) - (self.x + 30)) ** 2 + ((other.y + 30) - (self.y + 30)) ** 2)
+            dist = math.sqrt(((other.x + other.radius) - (self.x + self.radius)) ** 2 + ((other.y + other.radius) - (self.y + self.radius)) ** 2)
             return dist <= self.width
+        
         else:
-            dist = math.sqrt(((other.x + 20) - (self.x + 30)) ** 2 + ((other.y + 20) - (self.y + 30)) ** 2)
+            dist = math.sqrt(((other.x + 20) - (self.x + self.radius)) ** 2 + ((other.y + 20) - (self.y + self.radius)) ** 2)
             return dist <= self.width*0.8
 
 class Obstacles:
@@ -317,7 +326,7 @@ class Obstacles:
         
         for i in range(randrange(range_1, range_2)):
             while True:
-                newObstacle = Obstacle((119, 49, 19), getx(), gety(), 400)
+                newObstacle = Obstacle((119, 49, 19), getx(), gety())
                 if not self.isTouching(newObstacle) and not newObstacle.isTouching(p1) and not newObstacle.isTouching(p2):
                     self.obstacles.append(newObstacle)
                     break
@@ -346,7 +355,7 @@ class Bullet:
         self.csbullet_range = 300
         self.psbullet_range = 360
         self.bpbullet_range = 800
-        self.gls_range_value = uniform(95, 120)
+        self.gls_range_value = uniform(95, uniform(114, uniform(120, uniform(146, 180))))
         
         self.ftfire_range = uniform(130, 310)
         self.ftbullet_colour = (uniform(253, 255), uniform(110, 150), uniform(35, 55))
@@ -364,9 +373,11 @@ class Bullet:
         if round_values:
             self.dx = self.bulletSpeed(specialRound(dx))
             self.dy = self.bulletSpeed(specialRound(dy))
+            
         else:
             self.dx = self.bulletSpeed(dx)
             self.dy = self.bulletSpeed(dy)
+
         
         if weaponclass == "cs":
             self.dx += uniform(-6, 6)
@@ -376,37 +387,38 @@ class Bullet:
             self.dx += uniform(-3.5, 3.5)
             self.dy += uniform(-3.5, 3.5)
             
-        elif weaponclass == "smg":
+        if weaponclass == "smg":
             self.dx += uniform(-0.65, 0.65)
             self.dy += uniform(-0.65, 0.65)
             
-        if weaponclass == "mg":
+        elif weaponclass == "mg":
             self.dx += uniform(-0.19, 0.19)
             self.dy += uniform(-0.19, 0.19)
 
-        if weaponclass == "mng":
+        elif weaponclass == "mng":
             self.dx += uniform(-0.45, 0.45)
             self.dy += uniform(-0.45, 0.45)
             
-        if weaponclass == "br":
+        elif weaponclass == "br":
             self.dx += uniform(-0.1, 0.1)
             self.dy += uniform(-0.1, 0.1)
             
-        if weaponclass == "s":
+        elif weaponclass == "s":
             self.dx += uniform(-0.05, 0.05)
             self.dy += uniform(-0.05, 0.05)
             
-        if weaponclass == "ft":
+        elif weaponclass == "ft":
             self.dx += uniform(-2, 2)
             self.dy += uniform(-2, 2)
             
-        if weaponclass == "r":
+        elif weaponclass == "r":
             self.dx += uniform(-uniform(0, 3), uniform(0, 3))
             self.dy += uniform(-uniform(0, 3), uniform(0, 3))
 
-        if weaponclass == "D":
+        elif weaponclass == "D":
             self.dx += uniform(-uniform(0, 1.25), uniform(0, 1.25))
             self.dy += uniform(-uniform(0, 1.25), uniform(0, 1.25))
+
 
         if weaponclass == "ft":
             self.damage = uniform(1, 1.75)
@@ -609,6 +621,7 @@ class Player:
 
         elif self.weaponclass == "br":
             self.health = 95
+            
         elif self.weaponclass == "bp":
             self.health = 131
 
@@ -651,6 +664,7 @@ class Player:
         elif pressed[self.down]:
             self.dy = self.speed
             self.lastDy = self.dy
+            
         else:
             if self.lastDx != 0:
                 self.lastDy = 0
@@ -659,15 +673,17 @@ class Player:
         if pressed[self.left]:
             self.dx = -self.speed
             self.lastDx = self.dx
+            
         elif pressed[self.right]:
             self.dx = self.speed
             self.lastDx = self.dx
+            
         else:
             if self.lastDy != 0:
                 self.lastDx = 0
             self.dx = 0
 
-        
+
         self.x += self.dx
         if self.isOutOfBounds():
             self.x -= self.dx
@@ -993,7 +1009,7 @@ while not done:
             splatter.draw()
                          
         for obstacle in obstacles.obstacles:
-            healthBar(obstacle, (0, 0, 150), obstacle.x, obstacle.y, obstacle.health, 60, 8)  
+            healthBar(obstacle, (0, 0, 150), obstacle.x, obstacle.y, obstacle.health, 60, 12)  
 
         for player in [p1, p2]:
             if player.health <= 30:
