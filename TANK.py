@@ -217,7 +217,7 @@ bullet_penetration_factors = {
     "t": 20,
     "n": 0,
     "ss": 125,
-    "s": 25,
+    "s": 85,
     "cs": 4,
     "ps": 10.5,
     "r": uniform(0.01, randint(10, 90)),
