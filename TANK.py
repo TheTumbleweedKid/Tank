@@ -162,8 +162,8 @@ player_speeds = {
     "gl": 5.5,
     "gl-low": 4.5,
 
-    "mng": 3.5,
-    "mng-low": 3
+    "mng": 2.6,
+    "mng-low": 2.1
 }
 
 bullet_speeds = {
@@ -206,7 +206,7 @@ bullet_damages = {
     "td": 100,
     "gl": 5,
     "gls": 1.5,
-    "mng": 2.1,
+    "mng": 2.6,
     "g": 3
 }
 
@@ -216,7 +216,7 @@ bullet_penetration_factors = {
     "hmg": 13,
     "t": 20,
     "n": 0,
-    "ss": 75,
+    "ss": 125,
     "s": 25,
     "cs": 4,
     "ps": 10.5,
@@ -228,7 +228,7 @@ bullet_penetration_factors = {
     "td": 400,
     "gl": 70,
     "gls": 7,
-    "mng": 3.6,
+    "mng": 3.9,
     "g": 6
 }
 
