@@ -90,7 +90,7 @@ weapon_magazines = {
     "td": 3,
     "gl": 4,
     "gls": 20,
-    "mng": 150
+    "mng": 250
 }
 
 weapon_reloads = {
@@ -206,7 +206,7 @@ bullet_damages = {
     "td": 100,
     "gl": 5,
     "gls": 1.5,
-    "mng": 2.6,
+    "mng": 2,
     "g": 3
 }
 
@@ -228,7 +228,7 @@ bullet_penetration_factors = {
     "td": 400,
     "gl": 70,
     "gls": 7,
-    "mng": 3.9,
+    "mng": 2.5,
     "g": 6
 }
 
