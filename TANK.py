@@ -23,7 +23,7 @@ ps_pellets = 10
 
 gl_shrapnel = 65
 
-g_shrapnel = 42
+g_shrapnel = 47
 
 br_burst = 3
 bp_burst = 2
@@ -43,7 +43,7 @@ weapon_grenade_count = {
     "ps": 2,
     "r": randint(0, 4),
     "br": 2,
-    "bp": 4,
+    "bp": 5,
     "ft": 2,
     "D": 7,
     "td": 3,
@@ -138,8 +138,8 @@ player_speeds = {
     "cs": 6.25,
     "cs-low": 6.75,
 
-    "ps": 6.5,
-    "ps-low": 7,
+    "ps": 6,
+    "ps-low": 6.5,
 
     "r": rSpeed,
     "r-low": rSpeed + 0.5,
@@ -162,8 +162,8 @@ player_speeds = {
     "gl": 5.5,
     "gl-low": 4.5,
 
-    "mng": 2.6,
-    "mng-low": 2.1
+    "mng": 2.2,
+    "mng-low": 1.8
 }
 
 bullet_speeds = {
@@ -352,7 +352,7 @@ class Obstacles:
         
         for i in range(randrange(range_1, range_2)):
             while True:
-                newObstacle = Obstacle((119, 49, 19), getx(), gety())
+                newObstacle = Obstacle((87, 55, 41), getx(), gety())
                 if not self.isTouching(newObstacle) and not newObstacle.isTouching(p1) and not newObstacle.isTouching(p2):
                     self.obstacles.append(newObstacle)
                     break
@@ -398,10 +398,11 @@ class Bullet:
         self.grenade_type = grenade_type
 
         if self.grenade_type == "gl":
-            self.gls_range_value = uniform(95, uniform(114, uniform(120, uniform(146, 180))))
+            self.gls_range_value = uniform(95, uniform(114, uniform(120, uniform(146, uniform(156, 210)))))
             
         else:
-            self.gls_range_value = uniform(85, uniform(99, uniform(110, uniform(126, 160))))
+            self.gls_range_value = uniform(60, uniform(79, uniform(90, uniform(106, uniform(120, 160)))))
+
 
         if round_values:
             self.dx = self.bulletSpeed(specialRound(dx))
@@ -454,7 +455,7 @@ class Bullet:
 
 
         if weaponclass == "ft":
-            self.damage = uniform(1, 1.75)
+            self.damage = uniform(1.25, 2.75)
             
         else:
             self.damage = bullet_damages[weaponclass]
@@ -543,7 +544,7 @@ class Bullet:
 
 class Grenade(Bullet):
     def __init__(self, x, y, dx, dy, player):
-        self.grenade_range = 30
+        self.grenade_range = 20
 
         self.player = player
         
