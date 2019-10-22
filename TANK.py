@@ -21,7 +21,7 @@ done = False
 cs_pellets = 12
 ps_pellets = 10
 
-gl_shrapnel = 65
+gl_shrapnel = 82
 
 g_shrapnel = 47
 
@@ -53,13 +53,13 @@ weapon_grenade_count = {
 
 weapon_cooldowns = {
     "smg": 0.065,
-    "mg": 0.1125,
+    "mg": 0.1,
     "hmg": 0.2,
     "t": 0.01,
     "n": 0.095,
     "ss": 1.5,
     "s": 0.65,
-    "cs":0.25,
+    "cs": 0.25,
     "ps": 0.85,
     "r": uniform(0.001, 1),
     "br": 0.35,
@@ -76,7 +76,7 @@ weapon_magazines = {
     "smg": 25,
     "mg": 35,
     "hmg": 65,
-    "t": 130,
+    "t": 60,
     "n": 100,
     "ss": 6,
     "s": 10,
@@ -172,16 +172,16 @@ bullet_speeds = {
     "hmg": 10,
     "t": 0,
     "n": 6,
-    "ss": 23,
+    "ss": 33,
     "s": 20.5,
     "cs": 18,
     "ps": 19,
     "r": randint(5, 19),
     "br": 16,
-    "bp": 15,
+    "bp": 19,
     "ft": 8,
     "D": 21,
-    "td": 17,
+    "td": 12,
     "gl": 14,
     "gls": 3,
     "mng": 14,
@@ -398,7 +398,7 @@ class Bullet:
         self.grenade_type = grenade_type
 
         if self.grenade_type == "gl":
-            self.gls_range_value = uniform(95, uniform(114, uniform(120, uniform(146, uniform(156, 210)))))
+            self.gls_range_value = uniform(85, uniform(94, uniform(100, uniform(102, uniform(106, 210)))))
             
         else:
             self.gls_range_value = uniform(60, uniform(79, uniform(90, uniform(106, uniform(120, 160)))))
@@ -455,7 +455,7 @@ class Bullet:
 
 
         if weaponclass == "ft":
-            self.damage = uniform(1.25, 2.75)
+            self.damage = uniform(2.25, 4.75)
             
         else:
             self.damage = bullet_damages[weaponclass]
