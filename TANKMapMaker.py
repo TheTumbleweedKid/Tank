@@ -1,9 +1,21 @@
 import pygame
 import time
 from random import uniform
+import json
 
+maps = []
 map_obstacles = []
 obstacles = []
+
+
+map_name = input('Name your map: ')
+
+with open('TANKMaps.json', 'r') as map_file:
+    map_file_contents = map_file.read()
+    
+map_dict = {}
+map_dict = json.loads(map_file_contents)
+
 
 pygame.init()
 
@@ -32,7 +44,11 @@ class Obstacle:
         self.wait_time = 7
     
     def create_obstacle(self):
-        pygame.draw.ellipse(screen, self.colour, pygame.Rect(self.x, self.y, self.width, self.height))
+        pygame.draw.ellipse(
+            screen,
+            self.colour,
+            pygame.Rect(self.x, self.y, self.width, self.height)
+        )
 
 
 
@@ -49,7 +65,7 @@ while not done:
             obstacle_radius = uniform(20, uniform(32, 40))
             new_obstacle = Obstacle((87, 55, 41), obstacle_radius, mouse_x - obstacle_radius, mouse_y - obstacle_radius)
 
-            map_obstacles.append([mouse_x, mouse_y, obstacle_radius])
+            map_obstacles.append([mouse_x - obstacle_radius, mouse_y - obstacle_radius, obstacle_radius])
             obstacles.append(new_obstacle)
 
         if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
@@ -63,7 +79,14 @@ while not done:
     pygame.display.flip()
     clock.tick(60)
 
-print(map_obstacles)
+
+map_dict[map_name] = map_obstacles
+new_contents = json.dumps(map_dict)
+
+with open('TANKMaps.json', 'w') as map_file:
+    map_file.write(new_contents)
+
+print('Your map has been saved as ' + map_name)
 
 pygame.quit()
 

@@ -3,10 +3,12 @@ import time
 import math
 from random import uniform, randrange, randint
 import os, sys
+import ast
+import json
 
 from TankAssets import *
-
 import TankOptions
+from TankOptions import *
 
 
 pygame.init()
@@ -22,19 +24,19 @@ cs_pellets = 12
 ps_pellets = 10
 
 gl_shrapnel = 82
-
+c4_shrapnel = 73
 g_shrapnel = 47
 
 br_burst = 3
 bp_burst = 2
 
-rSpeed = uniform(4, 7)
-rHealth = randint(65, 135)
+r_speed = uniform(4, 7)
+r_health = randint(65, 135)
 
 weapon_grenade_count = {
     "smg": 2,
     "mg": 2,
-    "hmg": 4,
+    "hmg": 1,
     "t": 3,
     "n": 0,
     "ss": 1,
@@ -48,7 +50,8 @@ weapon_grenade_count = {
     "D": 7,
     "td": 3,
     "gl": 0,
-    "mng": 4
+    "mng": 4,
+    "ml": 0
 }
 
 weapon_cooldowns = {
@@ -69,7 +72,8 @@ weapon_cooldowns = {
     "td": 5,
     "gl": 1,
     "mng": 0.0035,
-    "g": 2
+    "g": 2,
+    "ml": 0.2
 }
 
 weapon_magazines = {
@@ -90,7 +94,8 @@ weapon_magazines = {
     "td": 3,
     "gl": 4,
     "gls": 20,
-    "mng": 250
+    "mng": 250,
+    "ml": 10
 }
 
 weapon_reloads = {
@@ -110,7 +115,8 @@ weapon_reloads = {
     "D": 4,
     "td": 3,
     "gl": 4,
-    "mng": 5
+    "mng": 5,
+    "ml": 0
 }
 
 player_speeds = {
@@ -141,8 +147,8 @@ player_speeds = {
     "ps": 6,
     "ps-low": 6.5,
 
-    "r": rSpeed,
-    "r-low": rSpeed + 0.5,
+    "r": r_speed,
+    "r-low": r_speed + 0.5,
 
     "br": 6,
     "br-low": 6.5,
@@ -163,13 +169,17 @@ player_speeds = {
     "gl-low": 4.5,
 
     "mng": 2.2,
-    "mng-low": 1.8
+    "mng-low": 1.8,
+
+    "ml": 5.25,
+    "ml-low": 5
+    
 }
 
 bullet_speeds = {
-    "smg": 11,
+    "smg": 16,
     "mg": 12,
-    "hmg": 10,
+    "hmg": 13,
     "t": 0,
     "n": 6,
     "ss": 33,
@@ -185,13 +195,14 @@ bullet_speeds = {
     "gl": 14,
     "gls": 3,
     "mng": 14,
-    "g": 8
+    "g": 6,
+    "c4": 0
 }
 
 bullet_damages = {
     "smg": 2.5,
     "mg": 5,
-    "hmg": 8,
+    "hmg": 12,
     "t": 1,
     "n": 2,
     "ss": 65,
@@ -204,16 +215,18 @@ bullet_damages = {
     "ft": uniform(1, 1.75),
     "D": 4.5,
     "td": 100,
+    "mng": 2,
     "gl": 5,
     "gls": 1.5,
-    "mng": 2,
-    "g": 3
+    "g": 3,
+    "c4": 5,
+    "c4s": 0.25
 }
 
 bullet_penetration_factors = {
     "smg": 1.5,
     "mg": 7,
-    "hmg": 13,
+    "hmg": 43,
     "t": 20,
     "n": 0,
     "ss": 125,
@@ -229,7 +242,8 @@ bullet_penetration_factors = {
     "gl": 70,
     "gls": 7,
     "mng": 2.5,
-    "g": 6
+    "g": 6,
+    "c4": 0
 }
 
 obstacle_numbers = {
@@ -255,6 +269,7 @@ ft_bulletcolour = (255, 180, 180)
 
 myfont = pygame.font.SysFont("Impact", 80)
 myfont2 = pygame.font.SysFont("Bahnscrift", 40)
+myfont3 = pygame.font.SysFont("Bahnscrift", 25)
 
 p1victorytext = myfont.render("GREEN WINS!", False, (0, 100, 0))
 p2victorytext = myfont.render("RED WINS!", False, (100, 0, 0))
@@ -311,11 +326,11 @@ class BloodSpatter:
 
 
 class Obstacle:
-    def __init__(self, colour, x, y):
-        self.x = x
+    def __init__(self, colour, x, y, radius):
+        self.x = x 
         self.y = y
         
-        self.radius = uniform(20, uniform(32, 40)) 
+        self.radius = radius 
         self.width = 2 * self.radius
         self.height = 2 * self.radius
                          
@@ -341,22 +356,32 @@ class Obstacle:
             dist = math.sqrt(((other.x + 20) - (self.x + self.radius)) ** 2 + ((other.y + 20) - (self.y + self.radius)) ** 2)
             return dist <= self.width*0.8
 
+
 class Obstacles:
-    def __init__(self, num_of_obs):
+    def __init__(self, num_of_obs, use_maps):
         self.obstacles = []
         self.num_of_obs = num_of_obs
 
+        if use_maps == "n":
+            range_1 = obstacle_numbers[num_of_obs][0]
+            range_2 = obstacle_numbers[num_of_obs][1]
+            for i in range(randrange(range_1, range_2)):
+                while True:
+                    new_obstacle = Obstacle((87, 55, 41), getx(), gety(), uniform(20, uniform(32, 40)))
+                    if not self.isTouching(new_obstacle) and not new_obstacle.isTouching(p1) and not new_obstacle.isTouching(p2):
+                        self.obstacles.append(new_obstacle)
+                        break
+                    
+        else:
+            with open('TANKMaps.json', 'r') as map_file:
+                map_file_contents = map_file.read()
+            map_dict = json.loads(map_file_contents)
+            selected_map = map_dict[num_of_obs]
+            
+            for obstacle in selected_map:
+                new_obstacle = Obstacle((87, 55, 41), obstacle[0], obstacle[1], obstacle[2])
+                self.obstacles.append(new_obstacle)
 
-        range_1 = obstacle_numbers[num_of_obs][0]
-        range_2 = obstacle_numbers[num_of_obs][1]
-        
-        for i in range(randrange(range_1, range_2)):
-            while True:
-                newObstacle = Obstacle((87, 55, 41), getx(), gety())
-                if not self.isTouching(newObstacle) and not newObstacle.isTouching(p1) and not newObstacle.isTouching(p2):
-                    self.obstacles.append(newObstacle)
-                    break
- 
     def isTouching(self, object):
         for obstacle in self.obstacles:
             if obstacle.isTouching(object):
@@ -385,7 +410,7 @@ class Bullet:
         self.ftfire_range = uniform(130, 310)
         self.ftbullet_colour = (uniform(253, 255), uniform(110, 150), uniform(35, 55))
 
-        self.gls_colour = (uniform(235, 255), uniform(160, 200), uniform(0, 25))
+        self.gls_colour = (uniform(235, 255), uniform(140, 190), uniform(0, 25))
 
         self.x = x
         self.y = y
@@ -398,7 +423,10 @@ class Bullet:
         self.grenade_type = grenade_type
 
         if self.grenade_type == "gl":
-            self.gls_range_value = uniform(85, uniform(94, uniform(100, uniform(102, uniform(106, 210)))))
+            self.gls_range_value = uniform(85, uniform(87, uniform(90, uniform(92, uniform(106, 210)))))
+
+        elif self.grenade_type == "c4":
+            self.gls_range_value = uniform(73, uniform(75, uniform(77, uniform(79, uniform(85, 310)))))
             
         else:
             self.gls_range_value = uniform(60, uniform(79, uniform(90, uniform(106, uniform(120, 160)))))
@@ -488,14 +516,14 @@ class Bullet:
     def isColliding(self, player):
         if player.isTouchingBullet(self):
             global blood_splatters
-            for i in range(0, randint(1, 2)):
-                blood_splatters.append(BloodSpatter((randint(177, 200), 11, 11), player.x + 10 + uniform(-18, 18), player.y + 10 + uniform(-18, 18)))
+            for i in range(0, randint(1, 3)):
+                blood_splatters.append(BloodSpatter((randint(177, 200), 11, 11), player.x + 10 + uniform(-24, 24), player.y + 10 + uniform(-24, 24)))
             
             player.health -= self.damage
             player.last_hit = time.time()
             return True
 
-        if obstacles.isTouching(self):
+        if obstacles.isTouching(self) and not (self.weaponclass == "c4"):
             return True
 
     def ps_range(self):
@@ -560,6 +588,9 @@ class Grenade(Bullet):
         if self.player.weaponclass == "gl":
             self.weaponclass = "gl"
 
+        elif (self.player.weaponclass == "hmg") or (self.player.weaponclass == "ml"):
+            self.weaponclass = "c4"
+
         else:
             self.weaponclass = "g"
     
@@ -579,13 +610,16 @@ class Grenade(Bullet):
         self.grenade_range -= 1
     
         if self.weaponclass == "g":
-            self.grenade_movement_rate -= 0.05
+            self.grenade_movement_rate -= 0.075
     
-        if self.grenade_range <= 0 or self.grenade_movement_rate <= 0 or self.isColliding(otherPlayer) or self.isOutOfBounds():
+        if ((self.weaponclass == "gl") and (self.grenade_range <= 0)) or ((self.weaponclass == "g") and (self.grenade_movement_rate <= 0)) or self.isColliding(otherPlayer) or self.isOutOfBounds():
             self.detonate()
 
         if self.weaponclass == "gl":
             pygame.draw.ellipse(screen, (96, 96, 96), pygame.Rect(self.x, self.y, self.width, self.height))
+
+        elif self.weaponclass == "c4":
+            pygame.draw.ellipse(screen, (115, 127, 115), pygame.Rect(self.x, self.y, self.width, self.height))
 
         else:
             pygame.draw.ellipse(screen, (106, 122, 90), pygame.Rect(self.x, self.y, self.width, self.height))
@@ -605,6 +639,14 @@ class Grenade(Bullet):
                 self.dy = uniform(-4, 4)
 
                 newBullet = Bullet(self.x + 3, self.y + 3, self.dx, self.dy, "gls", self.x + 3, self.y + 3, "gl", round_values=False)
+                self.player.bullets.append(newBullet)
+
+        elif self.weaponclass == "c4":
+            for shrapnel in range(c4_shrapnel):
+                self.dx = uniform(-4, 4)
+                self.dy = uniform(-4, 4)
+
+                newBullet = Bullet(self.x + 3 + uniform(-17, 17), self.y + 3 + uniform(-17, 17), self.dx, self.dy, "gls", self.x + 3, self.y + 3, "c4", round_values=False)
                 self.player.bullets.append(newBullet)
                 
         else:
@@ -634,7 +676,7 @@ class Player:
             
         else:
             self.playerImg = pygame.image.load(".\TankAssets\RedSoldier Paint\RedSoldierRight(Paint).png")
-            
+
         self.psbullet_range = 520
         self.csbullet_range = 300
         self.bpbullet_range = 800
@@ -699,10 +741,13 @@ class Player:
             self.health = 325
 
         elif self.weaponclass == "r":
-            self.health = rHealth
+            self.health = r_health
 
         elif self.weaponclass == "mng":
             self.health = 142
+
+        elif self.weaponclass == "ml":
+            self.health = 116
             
         else:
             self.health = 100
@@ -922,17 +967,25 @@ class Player:
                             self.firedBullets += 1
 
                     elif self.weaponclass == "t":
-                        if len(self.bullets)>= 129:
+                        if len(self.bullets) > (weapon_magazines["t"] - 1):
                             del self.bullets[0]
                             
-                        if len(self.bullets) < 130:
-                            newBullet = Bullet(self.x, self.y, dx, dy, self.weaponclass, self.x, self.y)
+                        if len(self.bullets) < weapon_magazines["t"]:
+                            newBullet = Bullet(self.bulletspawn_x, self.bulletspawn_y, dx, dy, self.weaponclass, self.x, self.y)
                             self.bullets.append(newBullet)
                             
                     elif self.weaponclass == "gl":
                         newGrenade = Grenade(self.bulletspawn_x, self.bulletspawn_y, dx, dy, self)
                         self.grenades.append(newGrenade)
                         self.firedBullets += 1
+
+                    elif self.weaponclass == "ml":
+                        if len(self.grenades) > (weapon_magazines["ml"] - 1):
+                            self.grenades[0].detonate()
+                            
+                        if len(self.grenades) < weapon_magazines["ml"]:
+                            newGrenade = Grenade(self.bulletspawn_x, self.bulletspawn_y, dx, dy, self)
+                            self.grenades.append(newGrenade)
                         
                     else:
                         newBullet = Bullet(self.bulletspawn_x, self.bulletspawn_y, dx, dy, self.weaponclass, self.x, self.y)
@@ -970,6 +1023,9 @@ class Player:
                     newGrenade = Grenade(self.bulletspawn_x, self.bulletspawn_y, dx, dy, self)
                     self.grenades.append(newGrenade)
                     self.thrownGrenades += 1
+
+            elif self.weaponclass == "hmg" and (len(self.grenades) == 1) and ((time.time() - self.lastThrow) > 0.5):
+                self.grenades[0].detonate()
                     
     def moveBullet(self, otherPlayer):
         for bullet in self.bullets:
@@ -989,8 +1045,6 @@ class Player:
             
             if bullet.isColliding(otherPlayer) or bullet.isOutOfBounds() or (self.weaponclass == "cs" and bullet.cs_range()) or (self.weaponclass == "ps" and bullet.ps_range()) or (self.weaponclass == "bp" and bullet.bp_range()) or (self.weaponclass == "ft" and bullet.ft_range()) or bullet.gls_range():
                 self.bullets.remove(bullet)
-
-
                 
         for grenade in self.grenades:
             grenade.move(otherPlayer)
@@ -1019,9 +1073,9 @@ class Player:
             dist = math.sqrt(((bullet.x + 8) - (self.x + 20)) ** 2 + ((bullet.y + 8) - (self.y + 20)) ** 2)
             return dist <= 20
 
-p1 = Player("p1", 40, 40, (0, 100, 0), pygame.K_LEFT, pygame.K_RIGHT, pygame.K_UP, pygame.K_DOWN, pygame.K_SLASH, pygame.K_PERIOD, TankOptions.player1_weapon.value, 0, 0)
-p2 = Player("p2", 1460, 960, (100, 0, 0), pygame.K_a, pygame.K_d, pygame.K_w, pygame.K_s, pygame.K_q, pygame.K_e, TankOptions.player2_weapon.value, 0, 0)
-obstacles = Obstacles(TankOptions.obstacles_frame.value)
+p1 = Player("p1", 40, 40, (0, 100, 0), pygame.K_LEFT, pygame.K_RIGHT, pygame.K_UP, pygame.K_DOWN, pygame.K_SLASH, pygame.K_PERIOD, TankOptions.player1_weapon, 0, 0)
+p2 = Player("p2", SCREEN_WIDTH - 80, SCREEN_HEIGHT - 80, (100, 0, 0), pygame.K_a, pygame.K_d, pygame.K_w, pygame.K_s, pygame.K_q, pygame.K_e, TankOptions.player2_weapon, 0, 0)
+obstacles = Obstacles(TankOptions.obstacles_frame_answer, TankOptions.maps_frame_answer)
 blood_splatters = []
 
 if p1.weaponclass == "r":
@@ -1071,7 +1125,6 @@ while not done:
             screenfill = (140, 140, 140)
 
         screen.fill(screenfill)
-
         
         obstacles.draw()
         
@@ -1079,29 +1132,50 @@ while not done:
 
         if pressed[pygame.K_ESCAPE]:
             done = True
+
         
         if p1.isReloading:
             p1ammocount = "RELOADING..."
-
         else:
             p1ammocount = weapon_magazines[p1.weaponclass] - p1.firedBullets
 
-            
         if p2.isReloading:
             p2ammocount = "RELOADING..."
-
         else:
             p2ammocount = weapon_magazines[p2.weaponclass] - p2.firedBullets
+
+        
+        if (weapon_grenade_count[p1.weaponclass] - p1.thrownGrenades) == 0:
+            p1_grenade_count = "OUT OF GRENADES"
+        else:
+            p1_grenade_count = weapon_grenade_count[p1.weaponclass] - p1.thrownGrenades
+
+        if (weapon_grenade_count[p2.weaponclass] - p2.thrownGrenades) == 0:
+            p2_grenade_count = "OUT OF GRENADES"
+        else:
+            p2_grenade_count = weapon_grenade_count[p2.weaponclass] - p2.thrownGrenades
+            
+            
 
         p1ammocountstr = str("GREEN AMMO: " + str(p1ammocount))
         p2ammocountstr = str("RED AMMO: " + str(p2ammocount))
 
-        p1ammotext = myfont2.render(p1ammocountstr, False, (0, 100, 0))
-        p2ammotext = myfont2.render(p2ammocountstr, False, (100, 0, 0))
+        p1_grenade_count_str = str("GREEN GRENADES: " + str(p1_grenade_count))
+        p2_grenade_count_str = str("RED GRENADES: " + str(p2_grenade_count))
+                           
+
+        p1ammotext = myfont2.render(p1ammocountstr, False, (0, 90, 0))
+        p2ammotext = myfont2.render(p2ammocountstr, False, (90, 0, 0))
+
+        p1_grenade_text = myfont3.render(p1_grenade_count_str, False, (0, 70, 0))
+        p2_grenade_text = myfont3.render(p2_grenade_count_str, False, (70, 0, 0))
 
         
         screen.blit(p1ammotext, (SCREEN_WIDTH - 400, 20))
-        screen.blit(p2ammotext, (SCREEN_WIDTH - 400, 80))
+        screen.blit(p2ammotext, (SCREEN_WIDTH - 400, 85))
+        
+        screen.blit(p1_grenade_text, (SCREEN_WIDTH - 400, 50))
+        screen.blit(p2_grenade_text, (SCREEN_WIDTH - 400, 115))
 
         
         p1.move("p1")
