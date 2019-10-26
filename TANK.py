@@ -51,7 +51,8 @@ weapon_grenade_count = {
     "td": 3,
     "gl": 0,
     "mng": 4,
-    "ml": 0
+    "ml": 0,
+    "mar": 3
 }
 
 weapon_cooldowns = {
@@ -73,7 +74,8 @@ weapon_cooldowns = {
     "gl": 1,
     "mng": 0.0035,
     "g": 2,
-    "ml": 0.2
+    "ml": 0.2,
+    "mar": 0.2
 }
 
 weapon_magazines = {
@@ -95,7 +97,8 @@ weapon_magazines = {
     "gl": 4,
     "gls": 20,
     "mng": 250,
-    "ml": 10
+    "ml": 10,
+    "mar": 20
 }
 
 weapon_reloads = {
@@ -116,7 +119,8 @@ weapon_reloads = {
     "td": 3,
     "gl": 4,
     "mng": 5,
-    "ml": 0
+    "ml": 0,
+    "mar": 2.7
 }
 
 player_speeds = {
@@ -172,29 +176,33 @@ player_speeds = {
     "mng-low": 1.8,
 
     "ml": 5.25,
-    "ml-low": 5
+    "ml-low": 5,
+    
+    "mar": 5.5,
+    "mar-low": 6
     
 }
 
 bullet_speeds = {
     "smg": 16,
-    "mg": 12,
-    "hmg": 13,
+    "mg": 14,
+    "hmg": 15,
+    "mar": 19,
     "t": 0,
     "n": 6,
     "ss": 33,
-    "s": 20.5,
+    "s": 22.5,
     "cs": 18,
     "ps": 19,
     "r": randint(5, 19),
-    "br": 16,
+    "br": 19,
     "bp": 19,
-    "ft": 8,
-    "D": 21,
-    "td": 12,
-    "gl": 14,
+    "ft": 10,
+    "D": 23,
+    "td": 13,
+    "gl": 14.5,
     "gls": 3,
-    "mng": 14,
+    "mng": 14.5,
     "g": 6,
     "c4": 0
 }
@@ -203,6 +211,7 @@ bullet_damages = {
     "smg": 2.5,
     "mg": 5,
     "hmg": 12,
+    "mar": 28,
     "t": 1,
     "n": 2,
     "ss": 65,
@@ -227,6 +236,7 @@ bullet_penetration_factors = {
     "smg": 1.5,
     "mg": 7,
     "hmg": 43,
+    "mar": 56,
     "t": 20,
     "n": 0,
     "ss": 125,
@@ -311,7 +321,6 @@ def healthBar(subject, colour, x, y, health, width, adjustment_factor):
 
             else:
                 pygame.draw.rect(screen, colour, pygame.Rect(x + (width / 2) - ((health / (adjustment_factor * 1.2)) / 2), y - 12, health / adjustment_factor, 5))
-
 
 class BloodSpatter:
     def __init__(self, colour, x, y):
@@ -708,6 +717,8 @@ class Player:
         self.fire = fire
         self.throw = throw
 
+        self.fire_key_up = 0
+
         self.oldX = 0
         self.oldY = 0
         
@@ -855,7 +866,7 @@ class Player:
             
         screen.blit(self.playerImg, (self.x, self.y))
         screen.blit(self.weaponImg, (self.x, self.y))
-        
+
     def isOutOfBounds(self):
         return (self.x <= 0 or self.x + self.width >= SCREEN_WIDTH) or (self.y <= 0 or self.y + self.height >= SCREEN_HEIGHT)
     
@@ -887,7 +898,6 @@ class Player:
 
         if pressed[self.fire]:
             if (self.getCooldown() > weapon_cooldowns[self.weaponclass]) and (not self.outOfAmmo(self.weaponclass)) and self.reloaded(self.weaponclass):
-                    self.lastFire = time.time()
                     dx = self.dx
                     dy = self.dy
                     if dx == 0:
@@ -948,6 +958,13 @@ class Player:
                                 newBullet = Bullet(self.bulletspawn_x, self.bulletspawn_y - 16 * (i - 1), dx, dy, self.weaponclass, self.x, self.y)
                                 self.bullets.append(newBullet)
                                 self.firedBullets += 1
+
+                    elif self.weaponclass == "mar":
+                        if (time.time() - self.lastFire) - (time.time()- self.fire_key_up) >= 0:
+                            newBullet = Bullet(self.bulletspawn_x, self.bulletspawn_y, dx, dy, self.weaponclass, self.x, self.y)
+                            self.bullets.append(newBullet)
+                            self.firedBullets += 1
+
                                 
                     elif self.weaponclass == "hmg":
                         if dx == 0:
@@ -991,6 +1008,7 @@ class Player:
                         newBullet = Bullet(self.bulletspawn_x, self.bulletspawn_y, dx, dy, self.weaponclass, self.x, self.y)
                         self.bullets.append(newBullet)
                         self.firedBullets += 1
+                    self.lastFire = time.time()
     
         elif pressed[self.throw]:
             if (self.getGrenadeCooldown() > weapon_cooldowns["g"]) and (not self.outOfGrenades()):
@@ -1101,6 +1119,15 @@ while not done:
         if event.type == pygame.QUIT:
             done = True
             break
+        
+        if event.type == pygame.KEYUP:
+            if event.key == pygame.K_SLASH:
+                if time.time() - p1.fire_key_up > weapon_cooldowns[p1.weaponclass]:
+                    p1.fire_key_up = time.time()
+
+            if event.key == pygame.K_q: 
+                if time.time() - p2.fire_key_up > weapon_cooldowns[p2.weaponclass]:
+                    p2.fire_key_up = time.time()
     
     if p1.isDead():
         screenfill = (200, 200, 200)

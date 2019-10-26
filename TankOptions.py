@@ -99,6 +99,7 @@ class WeaponFrame:
         self.add_option('Sub-Machine Gun', 'smg')
         self.add_option('Machine Gun', 'mg')
         self.add_option('Heavy Machine Gun', 'hmg')
+        self.add_option('Marksman Assault Rifle', 'mar')
         self.add_option('Minigun', 'mng')
         self.add_option('Super Sniper', 'ss')
         self.add_option('Sniper', 's')
@@ -151,7 +152,7 @@ class OptionsGUI:
 
 root = Tk()
 root.title('TANK 3.6.2')
-root.geometry('250x463')
+root.geometry('250x488')
 
 options = OptionsGUI(root)
 
