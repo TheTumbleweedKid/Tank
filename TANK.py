@@ -52,9 +52,7 @@ weapon_grenade_count = {
     "gl": 0,
     "mng": 4,
     "ml": 0,
-    "mar": 3,
-    "sap": 4,
-    "mp": 3
+    "mar": 3
 }
 
 weapon_cooldowns = {
@@ -77,9 +75,7 @@ weapon_cooldowns = {
     "mng": 0.0035,
     "g": 2,
     "ml": 0.2,
-    "mar": 0.2,
-    "sap": 0.075,
-    "mp": 0.065
+    "mar": 0.2
 }
 
 weapon_magazines = {
@@ -102,9 +98,7 @@ weapon_magazines = {
     "gls": 20,
     "mng": 250,
     "ml": 10,
-    "mar": 20,
-    "sap": 19,
-    "mp": 21
+    "mar": 20
 }
 
 weapon_reloads = {
@@ -126,9 +120,7 @@ weapon_reloads = {
     "gl": 4,
     "mng": 5,
     "ml": 0,
-    "mar": 2.7,
-    "sap": 1.2,
-    "mp": 1.6
+    "mar": 2.7
 }
 
 player_speeds = {
@@ -187,13 +179,7 @@ player_speeds = {
     "ml-low": 5,
     
     "mar": 5.5,
-    "mar-low": 6,
-
-    "sap": 6.5,
-    "sap-low": 7,
-
-    "mp": 6.25,
-    "mp-low": 6.85
+    "mar-low": 6
     
 }
 
@@ -218,9 +204,7 @@ bullet_speeds = {
     "gls": 3,
     "mng": 14.5,
     "g": 6,
-    "c4": 0,
-    "sap": 16,
-    "mp": 15
+    "c4": 0
 }
 
 bullet_damages = {
@@ -245,9 +229,7 @@ bullet_damages = {
     "gls": 1.5,
     "g": 3,
     "c4": 5,
-    "c4s": 0.25,
-    "sap": 8,
-    "mp": 6
+    "c4s": 0.25
 }
 
 bullet_penetration_factors = {
@@ -271,18 +253,16 @@ bullet_penetration_factors = {
     "gls": 7,
     "mng": 2.5,
     "g": 6,
-    "c4": 0,
-    "sap": 12,
-    "mp": 3
+    "c4": 0
 }
 
 obstacle_numbers = {
-    "n": [0, 1],
+    "m": [12, 17],
     "l": [7, 12],
-    "m": [23, 27],
-    "h": [30, 43],
-    "c": [54, 66],
-    "b": [69, 93],
+    "h": [18, 23],
+    "c": [42, 60],
+    "b": [56, 65],
+    "n": [0, 1],
     "i": [97, 125]
 }
 
@@ -406,7 +386,6 @@ class Obstacles:
                 map_file_contents = map_file.read()
             map_dict = json.loads(map_file_contents)
             selected_map = map_dict[num_of_obs]
-            print(len(selected_map))
             
             for obstacle in selected_map:
                 new_obstacle = Obstacle((87, 55, 41), obstacle[0], obstacle[1], obstacle[2])
@@ -436,8 +415,6 @@ class Bullet:
         self.csbullet_range = 300
         self.psbullet_range = 360
         self.bpbullet_range = 800
-        self.sapbullet_range = 1000
-        self.mpbullet_range = 750
         
         self.ftfire_range = uniform(130, 310)
         self.ftbullet_colour = (uniform(253, 255), uniform(110, 150), uniform(35, 55))
@@ -593,20 +570,6 @@ class Bullet:
         if math.sqrt(dx**2 + dy**2) >= self.ftfire_range:
             return True
         return False
-
-    def sap_range(self):
-        dx = (self.x - self.x_origin)
-        dy = (self.y - self.y_origin)
-        if math.sqrt(dx**2 + dy**2) >= self.sapbullet_range:
-            return True
-        return False
-    
-    def mp_range(self):
-        dx = (self.x - self.x_origin)
-        dy = (self.y - self.y_origin)
-        if math.sqrt(dx**2 + dy**2) >= self.mpbullet_range:
-            return True
-        return False
         
         
     def bulletSpeed(self, x):
@@ -722,6 +685,11 @@ class Player:
             
         else:
             self.playerImg = pygame.image.load(".\TankAssets\RedSoldier Paint\RedSoldierRight(Paint).png")
+
+        self.psbullet_range = 520
+        self.csbullet_range = 300
+        self.bpbullet_range = 800
+        self.ftfire_range = uniform(140, 160)
         
         self.x = x
         self.y = y
@@ -1035,12 +1003,6 @@ class Player:
                         if len(self.grenades) < weapon_magazines["ml"]:
                             newGrenade = Grenade(self.bulletspawn_x, self.bulletspawn_y, dx, dy, self)
                             self.grenades.append(newGrenade)
-
-                    elif self.weaponclass == "sap":
-                        if (time.time() - self.lastFire) - (time.time()- self.fire_key_up) >= 0:
-                            newBullet = Bullet(self.bulletspawn_x, self.bulletspawn_y, dx, dy, self.weaponclass, self.x, self.y)
-                            self.bullets.append(newBullet)
-                            self.firedBullets += 1
                         
                     else:
                         newBullet = Bullet(self.bulletspawn_x, self.bulletspawn_y, dx, dy, self.weaponclass, self.x, self.y)
@@ -1099,7 +1061,7 @@ class Player:
             else:
                 bullet.move()
             
-            if bullet.isColliding(otherPlayer) or bullet.isOutOfBounds() or (self.weaponclass == "cs" and bullet.cs_range()) or (self.weaponclass == "ps" and bullet.ps_range()) or (self.weaponclass == "bp" and bullet.bp_range()) or (self.weaponclass == "ft" and bullet.ft_range()) or (self.weaponclass == "sap" and bullet.sap_range()) or (self.weaponclass == "mp" and bullet.mp_range()) or bullet.gls_range():
+            if bullet.isColliding(otherPlayer) or bullet.isOutOfBounds() or (self.weaponclass == "cs" and bullet.cs_range()) or (self.weaponclass == "ps" and bullet.ps_range()) or (self.weaponclass == "bp" and bullet.bp_range()) or (self.weaponclass == "ft" and bullet.ft_range()) or bullet.gls_range():
                 self.bullets.remove(bullet)
                 
         for grenade in self.grenades:

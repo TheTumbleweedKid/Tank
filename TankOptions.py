@@ -111,8 +111,6 @@ class WeaponFrame:
         self.add_option('Flame Thrower', 'ft')
         self.add_option('Target Dummy', 'td')
         self.add_option('Grenade Launcher', 'gl')
-        self.add_option('Semi-Automatic Pistol', 'sap')
-        self.add_option('Machine Pistol', 'mp')
         self.add_option('Dev ONLY', 'D')
 
     def add_option(self, name, alias):
@@ -154,7 +152,7 @@ class OptionsGUI:
 
 root = Tk()
 root.title('TANK 3.6.2')
-root.geometry('250x538')
+root.geometry('250x488')
 
 options = OptionsGUI(root)
 

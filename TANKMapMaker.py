@@ -86,7 +86,7 @@ new_contents = json.dumps(map_dict)
 with open('TANKMaps.json', 'w') as map_file:
     map_file.write(new_contents)
 
-print('Your map, containing' + len(map_obstacles) + ' obstacles, has been saved as ' + map_name)
+print('Your map has been saved as ' + map_name)
 
 pygame.quit()
 
