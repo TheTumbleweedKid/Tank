@@ -26,6 +26,7 @@ ps_pellets = 10
 gl_shrapnel = 82
 c4_shrapnel = 73
 g_shrapnel = 47
+sds_shrapnel = 37
 
 br_burst = 3
 bp_burst = 2
@@ -224,7 +225,8 @@ bullet_speeds = {
     "c4": 0,
     "sap": 16,
     "mp": 15,
-    "st": 13
+    "st": 13,
+    "sds": 0
 }
 
 bullet_damages = {
@@ -252,7 +254,8 @@ bullet_damages = {
     "c4s": 0.25,
     "sap": 8,
     "mp": 6,
-    "st": 3
+    "st": 3,
+    "sds": 1
 }
 
 bullet_penetration_factors = {
@@ -279,7 +282,8 @@ bullet_penetration_factors = {
     "c4": 0,
     "sap": 12,
     "mp": 3,
-    "st": 7
+    "st": 7,
+    "sds": 2
 }
 
 obstacle_numbers = {
@@ -373,15 +377,17 @@ class Turret:
         self.height = 20
         self.radius = 10
         
-        self.colour = (20, 20, 255)
+        self.colour = (70, 70, 255)
         self.obstacle = obstacle
-        
+
         self.last_fire = 0
         self.fired_bullets = 0
 
         self.health = 162
         self.last_hit = 0
         self.wait_time = 3
+
+        self.weaponclass = "st"
         
     def range_finder(self, player):
         dist = math.sqrt(((player.x + 20) - (self.x + self.radius)) ** 2 + ((player.y + 20) - (self.y + self.radius)) ** 2)
@@ -398,19 +404,24 @@ class Turret:
     def target(self, player1, player2):
         if time.time() - self.last_fire >= weapon_cooldowns['st']:
             if self.range_finder(player1) < self.range_finder(player2):
-                (dx, dy) = self.get_bullet_velocity(player1)
-                new_bullet = Bullet(self.x + 6, self.y + 6, float(dx), float(dy), 'st', self.x + 6, self.y + 6, round_values=False)
-                global turret_bullets
-                turret_bullets.append(new_bullet)
+                if self.range_finder(player1) <= 525:
+                    (dx, dy) = self.get_bullet_velocity(player1)
+                    new_bullet = Bullet(self.x + 6, self.y + 6, float(dx), float(dy), 'st', self.x + 6, self.y + 6, round_values=False, turret=self)
+                    global turret_bullets
+                    turret_bullets.append(new_bullet)
+                    
+                    self.fired_bullets += 1
+                    self.last_fire = time.time()
 
             else:
-                (dx, dy) = self.get_bullet_velocity(player2)
-                new_bullet = Bullet(self.x + 10, self.y + 10, float(dx), float(dy), 'st', self.x + 10, self.y + 10, round_values=False)
-                turret_bullets.append(new_bullet)
-
-            self.fired_bullets += 1
-            self.last_fire = time.time()
-
+                if self.range_finder(player2) <= 525:
+                    (dx, dy) = self.get_bullet_velocity(player2)
+                    new_bullet = Bullet(self.x + 10, self.y + 10, float(dx), float(dy), 'st', self.x + 10, self.y + 10, round_values=False, turret=self)
+                    turret_bullets.append(new_bullet)
+                    
+                    self.fired_bullets += 1
+                    self.last_fire = time.time()
+            
     def out_of_ammo(self):
         ammo_left = self.mag_size - self.fired_bullets
         return ammo_left <= 0
@@ -480,6 +491,9 @@ class Obstacles:
                     new_obs_x = getx()
                     new_obs_y = gety()
                     new_obs_radius = uniform(20, uniform(32, 40))
+
+                    if (150 >= new_obs_x <= SCREEN_WIDTH - 150) or (150 >= new_obs_y <= SCREEN_HEIGHT - 150):
+                        has_turret = randint(0, 35)
                     
                     new_obstacle = Obstacle((87, 55, 41), new_obs_x, new_obs_y, new_obs_radius)
                     new_turret = Turret(new_obs_x + new_obs_radius - 10, new_obs_y + new_obs_radius - 10, new_obstacle)
@@ -509,10 +523,14 @@ class Obstacles:
             for obstacle in selected_map:
                 new_obstacle = Obstacle((87, 55, 41), obstacle[0], obstacle[1], obstacle[2])
                 self.obstacles.append(new_obstacle)
+                
+                if obstacle[3] == True:
+                    new_turret = Turret(obstacle[0] + obstacle[2] - 10, obstacle[1] + obstacle[2] - 10, new_obstacle)
+                    turrets.append(new_turret)
 
-    def isTouching(self, object):
+    def isTouching(self, object, exclusion=None):
         for obstacle in self.obstacles:
-            if obstacle.isTouching(object):
+            if obstacle.isTouching(object) and obstacle != exclusion:
                 if type(object) == Bullet:
                     obstacle.health -= 1 * bullet_penetration_factors[object.weaponclass]
                     obstacle.last_hit = time.time()
@@ -530,13 +548,13 @@ class Obstacles:
             
 
 class Bullet:
-    def __init__(self, x, y, dx, dy, weaponclass, x_origin, y_origin, grenade_type="not gl",  round_values=True):
+    def __init__(self, x, y, dx, dy, weaponclass, x_origin, y_origin, grenade_type="not gl",  round_values=True, turret=None):
         self.csbullet_range = 300
         self.psbullet_range = 360
         self.bpbullet_range = 800
         self.sapbullet_range = 1000
         self.mpbullet_range = 750
-        self.stbullet_range = 450
+        self.stbullet_range = randint(410, 490)
         
         self.ftfire_range = uniform(130, 310)
         self.ftbullet_colour = (uniform(253, 255), uniform(110, 150), uniform(35, 55))
@@ -553,11 +571,16 @@ class Bullet:
 
         self.grenade_type = grenade_type
 
+        self.turret = turret
+
         if self.grenade_type == "gl":
             self.gls_range_value = uniform(85, uniform(87, uniform(90, uniform(92, uniform(106, 210)))))
 
         elif self.grenade_type == "c4":
             self.gls_range_value = uniform(73, uniform(75, uniform(77, uniform(79, uniform(85, 310)))))
+
+        elif self.grenade_type == "sds":
+            self.gls_range_value = uniform(43, uniform(63, uniform(64, uniform(66, uniform(67, 185)))))
             
         else:
             self.gls_range_value = uniform(60, uniform(79, uniform(90, uniform(106, uniform(120, 160)))))
@@ -662,8 +685,12 @@ class Bullet:
             player.last_hit = time.time()
             return True
 
-        if obstacles.isTouching(self) and not (self.weaponclass == "c4"):
-            return True
+        if self.weaponclass == "st":
+            if obstacles.isTouching(self, self.turret.obstacle):
+                return True
+        else:
+            if obstacles.isTouching(self) and not (self.weaponclass == "c4"):
+                return True
 
     def ps_range(self):
         dx = (self.x - self.x_origin)
@@ -720,8 +747,7 @@ class Bullet:
         dy = (self.y - self.y_origin)
         if math.sqrt(dx**2 + dy**2) >= self.stbullet_range:
             return True
-        return False
-        
+        return False     
         
     def bulletSpeed(self, x):
         return x * bullet_speeds[self.weaponclass]
@@ -746,7 +772,7 @@ class Grenade(Bullet):
         self.height = 14
 
         if self.player.weaponclass == "st":
-            self.weaponclass = "c4"
+            self.weaponclass = "sds"
 
         elif self.player.weaponclass == "gl":
             self.weaponclass = "gl"
@@ -777,6 +803,7 @@ class Grenade(Bullet):
     
         if ((self.weaponclass == "gl") and (self.grenade_range <= 0)) or ((self.weaponclass == "g") and (self.grenade_movement_rate <= 0)) or self.isColliding(otherPlayer) or self.isOutOfBounds():
             self.detonate()
+
 
         if self.weaponclass == "gl":
             pygame.draw.ellipse(screen, (96, 96, 96), pygame.Rect(self.x, self.y, self.width, self.height))
@@ -811,6 +838,15 @@ class Grenade(Bullet):
 
                 newBullet = Bullet(self.x + 3 + uniform(-17, 17), self.y + 3 + uniform(-17, 17), self.dx, self.dy, "gls", self.x + 3, self.y + 3, "c4", round_values=False)
                 self.player.bullets.append(newBullet)
+
+        elif self.weaponclass == "sds":
+            for shrapnel in range(sds_shrapnel):
+                self.dx = uniform(-4, 4)
+                self.dy = uniform(-4, 4)
+
+                newBullet = Bullet(self.x + 3 + uniform(-17, 17), self.y + 3 + uniform(-17, 17), self.dx, self.dy, "gls", self.x + 3, self.y + 3, "sds", round_values=False)
+                global turret_bullets
+                turret_bullets.append(newBullet)
                 
         else:
             for shrapnel in range(g_shrapnel):
@@ -820,7 +856,12 @@ class Grenade(Bullet):
                 newBullet = Bullet(self.x + 3, self.y + 3, self.dx, self.dy, "gls", self.x + 3, self.y + 3, round_values=False)
                 self.player.bullets.append(newBullet)
     
-        self.player.grenades.remove(self)
+        if self.weaponclass == "sds":
+            global turret_sds
+            turret_sds.remove(self)
+            
+        else:
+            self.player.grenades.remove(self)
             
     def grenade_speed(self, x):
         return x * self.grenade_movement_rate
@@ -1402,7 +1443,7 @@ while not done:
             
         for bullet in turret_bullets:
             bullet.move()
-            if bullet.isColliding(p1) or bullet.isColliding(p2) or bullet.st_range() or bullet.isOutOfBounds():
+            if bullet.isColliding(p1) or bullet.isColliding(p2) or bullet.st_range() or bullet.isOutOfBounds() or bullet.gls_range():
                 turret_bullets.remove(bullet)
                     
         
