@@ -79,7 +79,8 @@ weapon_cooldowns = {
     "ml": 0.2,
     "mar": 0.2,
     "sap": 0.075,
-    "mp": 0.065
+    "mp": 0.065,
+    "st": 0.3
 }
 
 weapon_magazines = {
@@ -104,7 +105,8 @@ weapon_magazines = {
     "ml": 10,
     "mar": 20,
     "sap": 19,
-    "mp": 21
+    "mp": 21,
+    "st": 60
 }
 
 weapon_reloads = {
@@ -128,7 +130,8 @@ weapon_reloads = {
     "ml": 0,
     "mar": 2.7,
     "sap": 1.2,
-    "mp": 1.6
+    "mp": 1.6,
+    "st": 7
 }
 
 player_speeds = {
@@ -215,12 +218,13 @@ bullet_speeds = {
     "D": 23,
     "td": 13,
     "gl": 14.5,
-    "gls": 3,
+    "gls": 5,
     "mng": 14.5,
     "g": 6,
     "c4": 0,
     "sap": 16,
-    "mp": 15
+    "mp": 15,
+    "st": 13
 }
 
 bullet_damages = {
@@ -247,7 +251,8 @@ bullet_damages = {
     "c4": 5,
     "c4s": 0.25,
     "sap": 8,
-    "mp": 6
+    "mp": 6,
+    "st": 3
 }
 
 bullet_penetration_factors = {
@@ -273,7 +278,8 @@ bullet_penetration_factors = {
     "g": 6,
     "c4": 0,
     "sap": 12,
-    "mp": 3
+    "mp": 3,
+    "st": 7
 }
 
 obstacle_numbers = {
@@ -296,6 +302,10 @@ def specialRound(x):
 
 bulletcolour = (255, 180, 180)
 ft_bulletcolour = (255, 180, 180)
+
+turrets = []
+turret_sds = [] # NB: sds mean Self Destruct System(s)
+turret_bullets = []
 
 myfont = pygame.font.SysFont("Impact", 80)
 myfont2 = pygame.font.SysFont("Bahnscrift", 40)
@@ -354,6 +364,76 @@ class BloodSpatter:
         pygame.draw.ellipse(screen, self.colour, pygame.Rect(self.x, self.y, self.width, self.height))
 
 
+class Turret:
+    def __init__(self, x, y, obstacle):
+        self.x = x
+        self.y = y
+        
+        self.width = 20
+        self.height = 20
+        self.radius = 10
+        
+        self.colour = (20, 20, 255)
+        self.obstacle = obstacle
+        
+        self.last_fire = 0
+        self.fired_bullets = 0
+
+        self.health = 162
+        self.last_hit = 0
+        self.wait_time = 3
+        
+    def range_finder(self, player):
+        dist = math.sqrt(((player.x + 20) - (self.x + self.radius)) ** 2 + ((player.y + 20) - (self.y + self.radius)) ** 2)
+        return dist
+
+    def get_bullet_velocity(self, player):
+        horizontal = -(self.x - player.x)
+        vertical = -(self.y - player.y)
+        distance = ((vertical**2) + (horizontal**2)) ** 0.5
+        dx = horizontal / distance
+        dy = vertical / distance
+        return (dx, dy)
+
+    def target(self, player1, player2):
+        if time.time() - self.last_fire >= weapon_cooldowns['st']:
+            if self.range_finder(player1) < self.range_finder(player2):
+                (dx, dy) = self.get_bullet_velocity(player1)
+                new_bullet = Bullet(self.x + 6, self.y + 6, float(dx), float(dy), 'st', self.x + 6, self.y + 6, round_values=False)
+                global turret_bullets
+                turret_bullets.append(new_bullet)
+
+            else:
+                (dx, dy) = self.get_bullet_velocity(player2)
+                new_bullet = Bullet(self.x + 10, self.y + 10, float(dx), float(dy), 'st', self.x + 10, self.y + 10, round_values=False)
+                turret_bullets.append(new_bullet)
+
+            self.fired_bullets += 1
+            self.last_fire = time.time()
+
+    def out_of_ammo(self):
+        ammo_left = self.mag_size - self.fired_bullets
+        return ammo_left <= 0
+
+    def reload(self):
+        if self.out_of_ammo:
+            if not self.is_reloading:
+                self.is_reloading = True
+                self.reload_start = time.time()
+
+            if self.useful_functions.long_enough(self.reload_start, self.weapon_class.reload_time):
+                self.is_reloading = False
+                self.fired_bullets = 0
+
+    def isTouching(self, bullet):
+        dist = math.sqrt(((bullet.x + (bullet.width / 2)) - (self.x + self.radius)) ** 2 + ((bullet.y + (bullet.height / 2)) - (self.y + self.radius)) ** 2)
+        return dist <= (self.radius + 4)
+    
+
+    def draw(self):
+        pygame.draw.ellipse(screen, self.colour, pygame.Rect(self.x, self.y, self.width, self.height))
+
+
 class Obstacle:
     def __init__(self, colour, x, y, radius):
         self.x = x 
@@ -396,9 +476,27 @@ class Obstacles:
             range_2 = obstacle_numbers[num_of_obs][1]
             for i in range(randrange(range_1, range_2)):
                 while True:
-                    new_obstacle = Obstacle((87, 55, 41), getx(), gety(), uniform(20, uniform(32, 40)))
+                    has_turret = randint(0, 20)
+                    new_obs_x = getx()
+                    new_obs_y = gety()
+                    new_obs_radius = uniform(20, uniform(32, 40))
+                    
+                    new_obstacle = Obstacle((87, 55, 41), new_obs_x, new_obs_y, new_obs_radius)
+                    new_turret = Turret(new_obs_x + new_obs_radius - 10, new_obs_y + new_obs_radius - 10, new_obstacle)
+                    
                     if not self.isTouching(new_obstacle) and not new_obstacle.isTouching(p1) and not new_obstacle.isTouching(p2):
                         self.obstacles.append(new_obstacle)
+
+                        if num_of_obs != "i":
+                            if has_turret == 3:
+                                print("A new baby turret has been born!")
+                                global turrets
+                                turrets.append(new_turret)
+
+                        elif num_of_obs == "i" and has_turret <= 3:
+                            print("Oh, God! Not another one!")
+                            turrets.append(new_turret)
+                            
                         break
                     
         else:
@@ -438,6 +536,7 @@ class Bullet:
         self.bpbullet_range = 800
         self.sapbullet_range = 1000
         self.mpbullet_range = 750
+        self.stbullet_range = 450
         
         self.ftfire_range = uniform(130, 310)
         self.ftbullet_colour = (uniform(253, 255), uniform(110, 150), uniform(35, 55))
@@ -512,6 +611,14 @@ class Bullet:
         elif weaponclass == "D":
             self.dx += uniform(-uniform(0, 1.25), uniform(0, 1.25))
             self.dy += uniform(-uniform(0, 1.25), uniform(0, 1.25))
+
+        elif weaponclass == "sap":
+            self.dx += uniform(-uniform(0, 0.25), uniform(0, 0.25))
+            self.dy += uniform(-uniform(0, 0.25), uniform(0, 0.25))
+
+        elif weaponclass == "mp":
+            self.dx += uniform(-uniform(0, 0.75), uniform(0, 0.75))
+            self.dy += uniform(-uniform(0, 0.75), uniform(0, 0.75))
 
 
         if weaponclass == "ft":
@@ -607,6 +714,13 @@ class Bullet:
         if math.sqrt(dx**2 + dy**2) >= self.mpbullet_range:
             return True
         return False
+
+    def st_range(self):
+        dx = (self.x - self.x_origin)
+        dy = (self.y - self.y_origin)
+        if math.sqrt(dx**2 + dy**2) >= self.stbullet_range:
+            return True
+        return False
         
         
     def bulletSpeed(self, x):
@@ -631,7 +745,10 @@ class Grenade(Bullet):
         self.width = 14
         self.height = 14
 
-        if self.player.weaponclass == "gl":
+        if self.player.weaponclass == "st":
+            self.weaponclass = "c4"
+
+        elif self.player.weaponclass == "gl":
             self.weaponclass = "gl"
 
         elif (self.player.weaponclass == "hmg") or (self.player.weaponclass == "ml"):
@@ -1251,12 +1368,49 @@ while not done:
         
         p1.moveBullet(p2)
         p2.moveBullet(p1)
+
+
+        for turret in turrets:
+            for bullet in p1.bullets:
+                if turret.isTouching(bullet):
+                    turret.health -= 1 * bullet_penetration_factors[bullet.weaponclass]
+                    turret.last_hit = time.time()
+                    
+            for bullet in p2.bullets:
+                if turret.isTouching(bullet):
+                    print("The baby turret was shot")
+                    turret.health -= 1 * bullet_penetration_factors[bullet.weaponclass]
+                    turret.last_hit = time.time()
+                    
+            if turret.health <= 0:
+                new_sds = Grenade(turret.x + 3, turret.y + 3, 0, 0, turret)
+                turret_sds.append(new_sds)
+                new_sds = Grenade(turret.x + 3, turret.y + 3, 0, 0, turret)
+                turret_sds.append(new_sds)
+
+                turret_sds[-1].detonate()
+                turret_sds[-1].detonate()
+                
+                turrets.remove(turret)
+                
+                
+
+            turret.target(p1, p2)
+            turret.draw()
+            healthBar(turret, (0, 0, 150), turret.x, turret.y, turret.health, turret.radius, 6) 
+            
+            
+        for bullet in turret_bullets:
+            bullet.move()
+            if bullet.isColliding(p1) or bullet.isColliding(p2) or bullet.st_range() or bullet.isOutOfBounds():
+                turret_bullets.remove(bullet)
+                    
         
         for splatter in blood_splatters:
             splatter.draw()
                          
         for obstacle in obstacles.obstacles:
-            healthBar(obstacle, (0, 0, 150), obstacle.x, obstacle.y, obstacle.health, 60, 12)  
+            healthBar(obstacle, (0, 0, 150), obstacle.x, obstacle.y, obstacle.health, obstacle.radius, 12)  
 
         for player in [p1, p2]:
             if player.health <= 30:
