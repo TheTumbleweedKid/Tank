@@ -548,8 +548,12 @@ class Obstacles:
                 new_obstacle = Obstacle((87, 55, 41), obstacle[0], obstacle[1], obstacle[2])
                 self.obstacles.append(new_obstacle)
                 
-                if obstacle[3] == True:
+                if obstacle[3] == 1:
                     new_turret = Turret(obstacle[0] + obstacle[2] - 10, obstacle[1] + obstacle[2] - 10, new_obstacle)
+                    turrets.append(new_turret)
+                    
+                if obstacle[3] == 2:
+                    new_turret = Turret(obstacle[0] + obstacle[2] - 10, obstacle[1] + obstacle[2] - 10, new_obstacle, weaponclass="rft")
                     turrets.append(new_turret)
 
     def isTouching(self, object, exclusion=None):

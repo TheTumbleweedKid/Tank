@@ -2,6 +2,7 @@ import pygame
 import time
 from random import randint
 import json
+import math
 
 maps = []
 map_obstacles = []
@@ -29,7 +30,7 @@ done = False
 clock = pygame.time.Clock()
 
 class Obstacle:
-    def __init__(self, colour, radius, x, y, turret):
+    def __init__(self, colour, radius, x, y, turret, obs_number):
         self.x = x
         self.y = y
         
@@ -38,6 +39,7 @@ class Obstacle:
         self.height = 2 * self.radius
                          
         self.colour = colour
+        self.obs_number = obs_number
 
         self.turret = turret
     
@@ -48,10 +50,17 @@ class Obstacle:
             pygame.Rect(self.x, self.y, self.width, self.height)
         )
 
-        if self.turret:
+        if self.turret == 1:
             pygame.draw.ellipse(
                 screen,
                 (70, 70, 255),
+                pygame.Rect(self.x + self.radius - 10, self.y + self.radius - 10, 20, 20)
+        )
+
+        if self.turret == 2:
+            pygame.draw.ellipse(
+                screen,
+                (0, 0, 0),
                 pygame.Rect(self.x + self.radius - 10, self.y + self.radius - 10, 20, 20)
         )
 
@@ -62,9 +71,9 @@ while not done:
             done = True
             break
 
-        if event.type == pygame.KEYDOWN and event.key == pygame.KMOD_RCTRL:
-            max_radius1 = 26
-            max_radius2 = 30
+        if event.type == pygame.KEYDOWN and event.key == pygame.KMOD_LCTRL:
+            max_radius1 = 23
+            max_radius2 = 26
 
         else:
             max_radius1 = 32
@@ -72,20 +81,45 @@ while not done:
 
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
             (mouse_x, mouse_y) = pygame.mouse.get_pos()
-            
-            turret = False
+            turret = 0
             obstacle_radius = randint(20, randint(max_radius1, max_radius2))
-            new_obstacle = Obstacle((87, 55, 41), obstacle_radius, mouse_x - obstacle_radius, mouse_y - obstacle_radius, turret)
-
+            obs_number = len(map_obstacles)
+            new_obstacle = Obstacle((87, 55, 41), obstacle_radius, mouse_x - obstacle_radius, mouse_y - obstacle_radius, turret, obs_number)
+            
             map_obstacles.append([mouse_x - obstacle_radius, mouse_y - obstacle_radius, obstacle_radius, turret])
+            
             obstacles.append(new_obstacle)
 
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 3:
             (mouse_x, mouse_y) = pygame.mouse.get_pos()
+
             
-            turret = True
+            for deleted_obstacle in obstacles:
+                if math.sqrt((mouse_x - (deleted_obstacle.x + deleted_obstacle.radius)) ** 2 + (mouse_y - (deleted_obstacle.y + deleted_obstacle.radius)) ** 2) <= deleted_obstacle.radius:
+                    map_obstacles.remove(map_obstacles[deleted_obstacle.obs_number])
+                    
+                    for obstacle in obstacles:
+                        if obstacle.obs_number > deleted_obstacle.obs_number:
+                            obstacle.obs_number -= 1
+                            
+                    obstacles.remove(deleted_obstacle)
+
+        if event.type == pygame.KEYDOWN and event.key == pygame.K_1:
+            (mouse_x, mouse_y) = pygame.mouse.get_pos()
+            turret = 1
             obstacle_radius = randint(20, randint(max_radius1, max_radius2))
-            new_obstacle = Obstacle((87, 55, 41), obstacle_radius, mouse_x - obstacle_radius, mouse_y - obstacle_radius, turret)
+            obs_number = len(map_obstacles)
+            new_obstacle = Obstacle((87, 55, 41), obstacle_radius, mouse_x - obstacle_radius, mouse_y - obstacle_radius, turret, obs_number)
+
+            map_obstacles.append([mouse_x - obstacle_radius, mouse_y - obstacle_radius, obstacle_radius, turret])
+            obstacles.append(new_obstacle)
+
+        if event.type == pygame.KEYDOWN and event.key == pygame.K_2:
+            (mouse_x, mouse_y) = pygame.mouse.get_pos()
+            turret = 2
+            obs_number = len(map_obstacles)
+            obstacle_radius = randint(20, randint(max_radius1, max_radius2))
+            new_obstacle = Obstacle((87, 55, 41), obstacle_radius, mouse_x - obstacle_radius, mouse_y - obstacle_radius, turret, obs_number)
 
             map_obstacles.append([mouse_x - obstacle_radius, mouse_y - obstacle_radius, obstacle_radius, turret])
             obstacles.append(new_obstacle)
@@ -110,7 +144,7 @@ with open('TANKMaps.json', 'w') as map_file:
 
 num_of_obs = str(len(map_obstacles))
 
-print('Your map, containing ' + num_of_obs + ' obstacles, has been saved as ' + map_name)
+print('Your map, containing ' + num_of_obs + ' obstacles, has been saved as ' + map_name + '.')
 
 pygame.quit()
 
