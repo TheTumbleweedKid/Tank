@@ -78,10 +78,11 @@ weapon_cooldowns = {
     "mng": 0.0035,
     "g": 2,
     "ml": 0.2,
-    "mar": 0.2,
+    "mar": 0.3,
     "sap": 0.075,
     "mp": 0.065,
-    "st": 0.3
+    "st": 0.3,
+    "rft": 0.075
 }
 
 weapon_magazines = {
@@ -107,7 +108,8 @@ weapon_magazines = {
     "mar": 20,
     "sap": 19,
     "mp": 21,
-    "st": 60
+    "st": 60,
+    "rft": 120
 }
 
 weapon_reloads = {
@@ -132,7 +134,8 @@ weapon_reloads = {
     "mar": 2.7,
     "sap": 1.2,
     "mp": 1.6,
-    "st": 7
+    "st": 7,
+    "rft": 8
 }
 
 player_speeds = {
@@ -226,6 +229,7 @@ bullet_speeds = {
     "sap": 16,
     "mp": 15,
     "st": 13,
+    "rft": 12,
     "sds": 0
 }
 
@@ -255,6 +259,7 @@ bullet_damages = {
     "sap": 8,
     "mp": 6,
     "st": 3,
+    "rft": 0.5,
     "sds": 1
 }
 
@@ -262,7 +267,7 @@ bullet_penetration_factors = {
     "smg": 1.5,
     "mg": 7,
     "hmg": 43,
-    "mar": 56,
+    "mar": 43,
     "t": 20,
     "n": 0,
     "ss": 125,
@@ -282,7 +287,8 @@ bullet_penetration_factors = {
     "c4": 0,
     "sap": 12,
     "mp": 3,
-    "st": 7,
+    "st": 2,
+    "rft": 1,
     "sds": 2
 }
 
@@ -369,25 +375,36 @@ class BloodSpatter:
 
 
 class Turret:
-    def __init__(self, x, y, obstacle):
+    def __init__(self, x, y, obstacle, weaponclass="st"):
         self.x = x
         self.y = y
         
         self.width = 20
         self.height = 20
         self.radius = 10
-        
-        self.colour = (70, 70, 255)
+
+        self.weaponclass = weaponclass
+
+        if self.weaponclass == "rft":
+            self.colour = (0, 0, 0)
+            
+        else:
+            self.colour = (70, 70, 255)
+            
         self.obstacle = obstacle
+
 
         self.last_fire = 0
         self.fired_bullets = 0
+        self.mag_size = weapon_magazines[self.weaponclass]
+        
+        self.is_reloading = False
+        self.reload_start = 0
 
         self.health = 162
         self.last_hit = 0
         self.wait_time = 3
 
-        self.weaponclass = "st"
         
     def range_finder(self, player):
         dist = math.sqrt(((player.x + 20) - (self.x + self.radius)) ** 2 + ((player.y + 20) - (self.y + self.radius)) ** 2)
@@ -402,11 +419,11 @@ class Turret:
         return (dx, dy)
 
     def target(self, player1, player2):
-        if time.time() - self.last_fire >= weapon_cooldowns['st']:
+        if (time.time() - self.last_fire >= weapon_cooldowns[self.weaponclass]) and (self.fired_bullets < self.mag_size):
             if self.range_finder(player1) < self.range_finder(player2):
                 if self.range_finder(player1) <= 525:
                     (dx, dy) = self.get_bullet_velocity(player1)
-                    new_bullet = Bullet(self.x + 6, self.y + 6, float(dx), float(dy), 'st', self.x + 6, self.y + 6, round_values=False, turret=self)
+                    new_bullet = Bullet(self.x + 6, self.y + 6, float(dx), float(dy), self.weaponclass, self.x + 6, self.y + 6, round_values=False, turret=self)
                     global turret_bullets
                     turret_bullets.append(new_bullet)
                     
@@ -416,11 +433,13 @@ class Turret:
             else:
                 if self.range_finder(player2) <= 525:
                     (dx, dy) = self.get_bullet_velocity(player2)
-                    new_bullet = Bullet(self.x + 10, self.y + 10, float(dx), float(dy), 'st', self.x + 10, self.y + 10, round_values=False, turret=self)
+                    new_bullet = Bullet(self.x + 10, self.y + 10, float(dx), float(dy), self.weaponclass, self.x + 10, self.y + 10, round_values=False, turret=self)
                     turret_bullets.append(new_bullet)
                     
                     self.fired_bullets += 1
                     self.last_fire = time.time()
+
+            self.reload()
             
     def out_of_ammo(self):
         ammo_left = self.mag_size - self.fired_bullets
@@ -432,7 +451,7 @@ class Turret:
                 self.is_reloading = True
                 self.reload_start = time.time()
 
-            if self.useful_functions.long_enough(self.reload_start, self.weapon_class.reload_time):
+            if time.time() - self.reload_start >= weapon_reloads[self.weaponclass]:
                 self.is_reloading = False
                 self.fired_bullets = 0
 
@@ -488,6 +507,7 @@ class Obstacles:
             for i in range(randrange(range_1, range_2)):
                 while True:
                     has_turret = randint(0, 20)
+                    rf_turret = randint(1, 3)
                     new_obs_x = getx()
                     new_obs_y = gety()
                     new_obs_radius = uniform(20, uniform(32, 40))
@@ -496,7 +516,11 @@ class Obstacles:
                         has_turret = randint(0, 35)
                     
                     new_obstacle = Obstacle((87, 55, 41), new_obs_x, new_obs_y, new_obs_radius)
-                    new_turret = Turret(new_obs_x + new_obs_radius - 10, new_obs_y + new_obs_radius - 10, new_obstacle)
+                    if rf_turret == 1:
+                        new_turret = Turret(new_obs_x + new_obs_radius - 10, new_obs_y + new_obs_radius - 10, new_obstacle, weaponclass="rft")
+
+                    else:
+                        new_turret = Turret(new_obs_x + new_obs_radius - 10, new_obs_y + new_obs_radius - 10, new_obstacle)
                     
                     if not self.isTouching(new_obstacle) and not new_obstacle.isTouching(p1) and not new_obstacle.isTouching(p2):
                         self.obstacles.append(new_obstacle)
@@ -643,6 +667,15 @@ class Bullet:
             self.dx += uniform(-uniform(0, 0.75), uniform(0, 0.75))
             self.dy += uniform(-uniform(0, 0.75), uniform(0, 0.75))
 
+        elif weaponclass == "st":
+            self.dx += uniform(-uniform(0, 0.25), uniform(0, 0.25))
+            self.dy += uniform(-uniform(0, 0.25), uniform(0, 0.25))
+
+        elif weaponclass == "rft":
+            self.dx += uniform(-uniform(0, 0.75), uniform(0, 0.75))
+            self.dy += uniform(-uniform(0, 0.75), uniform(0, 0.75))
+            
+
 
         if weaponclass == "ft":
             self.damage = uniform(2.25, 4.75)
@@ -685,9 +718,10 @@ class Bullet:
             player.last_hit = time.time()
             return True
 
-        if self.weaponclass == "st":
+        if self.weaponclass == "st" or self.weaponclass == "rft":
             if obstacles.isTouching(self, self.turret.obstacle):
                 return True
+            
         else:
             if obstacles.isTouching(self) and not (self.weaponclass == "c4"):
                 return True
@@ -771,7 +805,7 @@ class Grenade(Bullet):
         self.width = 14
         self.height = 14
 
-        if self.player.weaponclass == "st":
+        if self.player.weaponclass == "st" or self.player.weaponclass == "rft":
             self.weaponclass = "sds"
 
         elif self.player.weaponclass == "gl":
