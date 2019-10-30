@@ -57,7 +57,8 @@ weapon_grenade_count = {
     'mar': 3,
     'sap': 4,
     'mp': 3,
-    'hrpg': 0
+    'hrpg': 0,
+    'tf': 0
 }
 
 weapon_cooldowns = {
@@ -85,7 +86,8 @@ weapon_cooldowns = {
     'mp': 0.065,
     'st': 0.3,
     'rft': 0.075,
-    'hrpg': 0.35
+    'hrpg': 0.35,
+    'tf': 0.1125
 }
 
 weapon_magazines = {
@@ -113,7 +115,8 @@ weapon_magazines = {
     'mp': 21,
     'st': 60,
     'rft': 120,
-    'hrpg': 3
+    'hrpg': 3,
+    'tf': 45
 }
 
 weapon_reloads = {
@@ -140,7 +143,8 @@ weapon_reloads = {
     'mp': 1.6,
     'st': 7,
     'rft': 8,
-    'hrpg': 3
+    'hrpg': 3,
+    'tf': 2.5
 }
 
 player_speeds = {
@@ -208,8 +212,10 @@ player_speeds = {
     'mp-low': 6.85,
 
     'hrpg': 4,
-    'hrpg-low': 4.25
-    
+    'hrpg-low': 4.25,
+
+    'tf': 5,
+    'tf-low': 5.5
 }
 
 bullet_speeds = {
@@ -239,7 +245,8 @@ bullet_speeds = {
     'st': 13,
     'rft': 12,
     'sds': 0,
-    'hrpg': 8
+    'hrpg': 7,
+    'tf': 11
 }
 
 bullet_damages = {
@@ -270,7 +277,8 @@ bullet_damages = {
     'st': 3,
     'rft': 0.5,
     'sds': 1,
-    'hrpg': 5
+    'hrpg': 5,
+    'tf': 5
 }
 
 bullet_penetration_factors = {
@@ -300,7 +308,8 @@ bullet_penetration_factors = {
     'st': 2,
     'rft': 1,
     'sds': 2,
-    'hrpg': 97
+    'hrpg': 97,
+    'tf': 13
 }
 
 obstacle_numbers = {
@@ -690,6 +699,9 @@ class Bullet:
             self.dx += uniform(-uniform(0, 0.75), uniform(0, 0.75))
             self.dy += uniform(-uniform(0, 0.75), uniform(0, 0.75))
             
+        elif weaponclass == 'tf':
+            self.dx += uniform(-uniform(0, 0.45), uniform(0, 0.45))
+            self.dy += uniform(-uniform(0, 0.45), uniform(0, 0.45))
 
 
         if weaponclass == 'ft':
@@ -723,13 +735,16 @@ class Bullet:
 
         pygame.draw.ellipse(screen, bulletcolour, pygame.Rect(self.x, self.y, 8, 8))
 
-    def isColliding(self, player):
+    def isColliding(self, player, otherPlayer):
         if player.isTouchingBullet(self):
             global blood_splatters
             for i in range(0, randint(1, 3)):
                 blood_splatters.append(BloodSpatter((randint(177, 200), 11, 11), player.x + 10 + uniform(-24, 24), player.y + 10 + uniform(-24, 24)))
             
             player.health -= self.damage
+            if otherPlayer.weaponclass == 'tf':
+                otherPlayer.health += self.damage
+
             player.last_hit = time.time()
             return True
 
@@ -814,8 +829,8 @@ class Grenade(Bullet):
         self.x = x
         self.y = y
 
-        self.dx = dx * 0.8
-        self.dy = dy * 0.8
+        self.dx = dx * 0.7
+        self.dy = dy * 0.7
 
         self.radius = 7
         self.width = 14
@@ -901,7 +916,7 @@ class Grenade(Bullet):
         if self.weaponclass == 'g':
             self.grenade_movement_rate -= 0.075
     
-        if ((self.weaponclass == 'gl' or self.weaponclass == 'hrpg') and (self.grenade_range <= 0)) or ((self.weaponclass == 'g') and (self.grenade_movement_rate <= 0)) or self.isColliding(otherPlayer) or self.isOutOfBounds():
+        if ((self.weaponclass == 'gl' or self.weaponclass == 'hrpg') and (self.grenade_range <= 0)) or ((self.weaponclass == 'g') and (self.grenade_movement_rate <= 0)) or self.isColliding(otherPlayer, self.player) or self.isOutOfBounds():
             self.detonate()
 
 
@@ -1077,11 +1092,12 @@ class Player:
         self.thrownGrenades = 0
     
         self.speed = player_speeds[weaponclass]
-        
+
     def damage(self, health):
         self.health -= health
+        return True
         
-    def move(self, player):
+    def move(self, player, otherPlayer):
         self.oldX = self.x
         self.oldY = self.y
         if self.health <= 30:
@@ -1375,11 +1391,19 @@ class Player:
             elif dx <= -1:
                 self.bulletspawn_x = self.x
                 self.bulletspawn_y = self.y + 30
+
+            if pressed[self.throw]:
+                    newGrenade = Grenade(self.bulletspawn_x, self.bulletspawn_y, dx, dy, self, straight_aim_hrpg=True)
+                    self.grenades.append(newGrenade)
+                    self.firedBullets += 1
+                    self.lastFire = time.time()
                     
-            newGrenade = Grenade(self.bulletspawn_x, self.bulletspawn_y, dx, dy, self)
-            self.grenades.append(newGrenade)
-            self.firedBullets += 1
-            self.lastFire = time.time()
+            else:
+                newGrenade = Grenade(self.bulletspawn_x, self.bulletspawn_y, dx, dy, self)
+                self.grenades.append(newGrenade)
+                self.firedBullets += 1
+                self.lastFire = time.time()
+            
             if self.firedBullets == weapon_magazines['hrpg']:
                 self.isFiring = False
 
@@ -1435,12 +1459,12 @@ class Player:
             else:
                 bullet.move()
             
-            if bullet.isColliding(otherPlayer) or bullet.isOutOfBounds() or (self.weaponclass == 'cs' and bullet.cs_range()) or (self.weaponclass == 'ps' and bullet.ps_range()) or (self.weaponclass == 'bp' and bullet.bp_range()) or (self.weaponclass == 'ft' and bullet.ft_range()) or (self.weaponclass == 'sap' and bullet.sap_range()) or (self.weaponclass == 'mp' and bullet.mp_range()) or bullet.gls_range():
+            if bullet.isColliding(otherPlayer, self) or bullet.isOutOfBounds() or (self.weaponclass == 'cs' and bullet.cs_range()) or (self.weaponclass == 'ps' and bullet.ps_range()) or (self.weaponclass == 'bp' and bullet.bp_range()) or (self.weaponclass == 'ft' and bullet.ft_range()) or (self.weaponclass == 'sap' and bullet.sap_range()) or (self.weaponclass == 'mp' and bullet.mp_range()) or bullet.gls_range():
                 self.bullets.remove(bullet)
                 
         for grenade in self.grenades:
             grenade.move(otherPlayer)
-            if grenade.isColliding(otherPlayer) or grenade.isOutOfBounds():
+            if grenade.isColliding(otherPlayer, self) or grenade.isOutOfBounds():
                 grenade.detonate()
                 
     def getCooldown(self):
@@ -1579,8 +1603,8 @@ while not done:
         screen.blit(p2_grenade_text, (SCREEN_WIDTH - 400, 115))
 
         
-        p1.move('p1')
-        p2.move('p2')
+        p1.move('p1', p2)
+        p2.move('p2', p1)
         
         p1.bullet(p1.weaponclass)
         p2.bullet(p2.weaponclass)
@@ -1593,12 +1617,16 @@ while not done:
             for bullet in p1.bullets:
                 if turret.isTouching(bullet):
                     turret.health -= 1 * bullet_penetration_factors[bullet.weaponclass]
+                    if p1.weaponclass == 'tf':
+                        p1.health += 0.8 * bullet_penetration_factors[bullet.weaponclass]
                     turret.last_hit = time.time()
                     
             for bullet in p2.bullets:
                 if turret.isTouching(bullet):
                     print('The baby turret was shot')
                     turret.health -= 1 * bullet_penetration_factors[bullet.weaponclass]
+                    if p2.weaponclass == 'tf':
+                        p2.health += 0.08 * bullet_penetration_factors[bullet.weaponclass]
                     turret.last_hit = time.time()
                     
             if turret.health <= 0:
@@ -1621,7 +1649,7 @@ while not done:
             
         for bullet in turret_bullets:
             bullet.move()
-            if bullet.isColliding(p1) or bullet.isColliding(p2) or bullet.st_range() or bullet.isOutOfBounds() or bullet.gls_range():
+            if bullet.isColliding(p1, p1) or bullet.isColliding(p2, p2) or bullet.st_range() or bullet.isOutOfBounds() or bullet.gls_range():
                 turret_bullets.remove(bullet)
                     
         
