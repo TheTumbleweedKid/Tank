@@ -58,7 +58,7 @@ weapon_grenade_count = {
     'sap': 4,
     'mp': 3,
     'hrpg': 0,
-    'tf': 0
+    'thf': 0
 }
 
 weapon_cooldowns = {
@@ -87,7 +87,7 @@ weapon_cooldowns = {
     'st': 0.3,
     'rft': 0.075,
     'hrpg': 0.35,
-    'tf': 0.1125
+    'thf': 0.1125
 }
 
 weapon_magazines = {
@@ -116,7 +116,7 @@ weapon_magazines = {
     'st': 60,
     'rft': 120,
     'hrpg': 3,
-    'tf': 45
+    'thf': 45
 }
 
 weapon_reloads = {
@@ -144,7 +144,7 @@ weapon_reloads = {
     'st': 7,
     'rft': 8,
     'hrpg': 3,
-    'tf': 2.5
+    'thf': 2.5
 }
 
 player_speeds = {
@@ -214,8 +214,8 @@ player_speeds = {
     'hrpg': 4,
     'hrpg-low': 4.25,
 
-    'tf': 5,
-    'tf-low': 5.5
+    'thf': 5,
+    'thf-low': 5.5
 }
 
 bullet_speeds = {
@@ -246,7 +246,7 @@ bullet_speeds = {
     'rft': 12,
     'sds': 0,
     'hrpg': 7,
-    'tf': 11
+    'thf': 11
 }
 
 bullet_damages = {
@@ -278,7 +278,7 @@ bullet_damages = {
     'rft': 0.5,
     'sds': 1,
     'hrpg': 5,
-    'tf': 5
+    'thf': 5
 }
 
 bullet_penetration_factors = {
@@ -309,7 +309,7 @@ bullet_penetration_factors = {
     'rft': 1,
     'sds': 2,
     'hrpg': 97,
-    'tf': 13
+    'thf': 13
 }
 
 obstacle_numbers = {
@@ -364,6 +364,10 @@ def gety():
     return y
 
 def recentlyShot(subject, last_hit, wait_time):
+    if type(subject) == Player:
+        if time.time() - subject.last_hit >= 5:
+            player.health += 0.025
+
     if time.time() - subject.last_hit <= subject.wait_time:
         return True
 
@@ -443,7 +447,7 @@ class Turret:
             if self.range_finder(player1) < self.range_finder(player2):
                 if self.range_finder(player1) <= 525:
                     (dx, dy) = self.get_bullet_velocity(player1)
-                    new_bullet = Bullet(self.x + 6, self.y + 6, float(dx), float(dy), self.weaponclass, self.x + 6, self.y + 6, round_values=False, turret=self)
+                    new_bullet = Bullet(self.x + 6, self.y + 6, float(dx), float(dy), self.weaponclass, self.x + 6, self.y + 6, None, round_values=False, turret=self)
                     global turret_bullets
                     turret_bullets.append(new_bullet)
                     
@@ -453,7 +457,7 @@ class Turret:
             else:
                 if self.range_finder(player2) <= 525:
                     (dx, dy) = self.get_bullet_velocity(player2)
-                    new_bullet = Bullet(self.x + 10, self.y + 10, float(dx), float(dy), self.weaponclass, self.x + 10, self.y + 10, round_values=False, turret=self)
+                    new_bullet = Bullet(self.x + 10, self.y + 10, float(dx), float(dy), self.weaponclass, self.x + 10, self.y + 10, None, round_values=False, turret=self)
                     turret_bullets.append(new_bullet)
                     
                     self.fired_bullets += 1
@@ -596,7 +600,7 @@ class Obstacles:
             
 
 class Bullet:
-    def __init__(self, x, y, dx, dy, weaponclass, x_origin, y_origin, grenade_type='not gl',  round_values=True, turret=None):
+    def __init__(self, x, y, dx, dy, weaponclass, x_origin, y_origin, otherPlayer, grenade_type='not gl',  round_values=True, turret=None):
         self.csbullet_range = 300
         self.psbullet_range = 360
         self.bpbullet_range = 800
@@ -620,6 +624,7 @@ class Bullet:
         self.grenade_type = grenade_type
 
         self.turret = turret
+        self.otherPlayer = otherPlayer
 
         if self.grenade_type == 'gl':
             self.gls_range_value = uniform(85, uniform(87, uniform(90, uniform(92, uniform(106, 210)))))
@@ -633,6 +638,14 @@ class Bullet:
         else:
             self.gls_range_value = uniform(60, uniform(79, uniform(90, uniform(106, uniform(120, 160)))))
 
+        if weaponclass == 's':
+            (des_dx, des_dy) = (self.get_bullet_velocity(otherPlayer))
+            
+            dx += self.interpolate(dx, des_dx, 0.1)
+            dx = self.lock(dx, 0.1)
+
+            dy += self.interpolate(dy, des_dy, 0.1)
+            dy = self.lock(dy, 0.1)
 
         if round_values:
             self.dx = self.bulletSpeed(specialRound(dx))
@@ -667,10 +680,6 @@ class Bullet:
             self.dx += uniform(-0.1, 0.1)
             self.dy += uniform(-0.1, 0.1)
             
-        elif weaponclass == 's':
-            self.dx += uniform(-0.05, 0.05)
-            self.dy += uniform(-0.05, 0.05)
-            
         elif weaponclass == 'ft':
             self.dx += uniform(-2, 2)
             self.dy += uniform(-2, 2)
@@ -699,10 +708,9 @@ class Bullet:
             self.dx += uniform(-uniform(0, 0.75), uniform(0, 0.75))
             self.dy += uniform(-uniform(0, 0.75), uniform(0, 0.75))
             
-        elif weaponclass == 'tf':
+        elif weaponclass == 'thf':
             self.dx += uniform(-uniform(0, 0.45), uniform(0, 0.45))
             self.dy += uniform(-uniform(0, 0.45), uniform(0, 0.45))
-
 
         if weaponclass == 'ft':
             self.damage = uniform(2.25, 4.75)
@@ -742,7 +750,7 @@ class Bullet:
                 blood_splatters.append(BloodSpatter((randint(177, 200), 11, 11), player.x + 10 + uniform(-24, 24), player.y + 10 + uniform(-24, 24)))
             
             player.health -= self.damage
-            if otherPlayer.weaponclass == 'tf':
+            if otherPlayer.weaponclass == 'thf':
                 otherPlayer.health += self.damage
 
             player.last_hit = time.time()
@@ -755,6 +763,29 @@ class Bullet:
         else:
             if obstacles.isTouching(self) and not (self.weaponclass == 'c4'):
                 return True
+
+    def get_bullet_velocity(self, otherPlayer):
+        horizontal = -(self.x - otherPlayer.x)
+        vertical = -(self.y - otherPlayer.y)
+        distance = ((vertical**2) + (horizontal**2)) ** 0.5
+        dx = horizontal / distance
+        dy = vertical / distance
+        return (dx, dy)
+
+    def interpolate(self, value, destination, increment):
+        if value < destination:
+            return increment
+        elif value > destination:
+            return -increment
+        else:
+            return 0
+
+    def lock(self, value, max):
+        if value < -max:
+            return -max
+        elif value > max:
+            return max
+        return value
 
     def ps_range(self):
         dx = (self.x - self.x_origin)
@@ -946,7 +977,7 @@ class Grenade(Bullet):
                 self.dx = uniform(-4, 4)
                 self.dy = uniform(-4, 4)
 
-                newBullet = Bullet(self.x + 3, self.y + 3, self.dx, self.dy, 'gls', self.x + 3, self.y + 3, 'gl', round_values=False)
+                newBullet = Bullet(self.x + 3, self.y + 3, self.dx, self.dy, 'gls', self.x + 3, self.y + 3, None, 'gl', round_values=False)
                 self.player.bullets.append(newBullet)
 
         elif self.weaponclass == 'c4':
@@ -954,7 +985,7 @@ class Grenade(Bullet):
                 self.dx = uniform(-4, 4)
                 self.dy = uniform(-4, 4)
 
-                newBullet = Bullet(self.x + 3 + uniform(-17, 17), self.y + 3 + uniform(-17, 17), self.dx, self.dy, 'gls', self.x + 3, self.y + 3, 'c4', round_values=False)
+                newBullet = Bullet(self.x + 3 + uniform(-17, 17), self.y + 3 + uniform(-17, 17), self.dx, self.dy, 'gls', self.x + 3, self.y + 3, None, 'c4', round_values=False)
                 self.player.bullets.append(newBullet)
 
         elif self.weaponclass == 'hrpg':
@@ -962,7 +993,7 @@ class Grenade(Bullet):
                 self.dx = uniform(-4, 4)
                 self.dy = uniform(-4, 4)
 
-                newBullet = Bullet(self.x + 3 + uniform(-17, 17), self.y + 3 + uniform(-17, 17), self.dx, self.dy, 'gls', self.x + 3, self.y + 3, 'hrpg', round_values=False)
+                newBullet = Bullet(self.x + 3 + uniform(-17, 17), self.y + 3 + uniform(-17, 17), self.dx, self.dy, 'gls', self.x + 3, self.y + 3, None, 'hrpg', round_values=False)
                 self.player.bullets.append(newBullet)
 
         elif self.weaponclass == 'sds':
@@ -970,7 +1001,7 @@ class Grenade(Bullet):
                 self.dx = uniform(-4, 4)
                 self.dy = uniform(-4, 4)
 
-                newBullet = Bullet(self.x + 3 + uniform(-17, 17), self.y + 3 + uniform(-17, 17), self.dx, self.dy, 'gls', self.x + 3, self.y + 3, 'sds', round_values=False)
+                newBullet = Bullet(self.x + 3 + uniform(-17, 17), self.y + 3 + uniform(-17, 17), self.dx, self.dy, 'gls', self.x + 3, self.y + 3, None, 'sds', round_values=False)
                 global turret_bullets
                 turret_bullets.append(newBullet)
                 
@@ -979,7 +1010,7 @@ class Grenade(Bullet):
                 self.dx = uniform(-4, 4)
                 self.dy = uniform(-4, 4)
 
-                newBullet = Bullet(self.x + 3, self.y + 3, self.dx, self.dy, 'gls', self.x + 3, self.y + 3, round_values=False)
+                newBullet = Bullet(self.x + 3, self.y + 3, self.dx, self.dy, 'gls', self.x + 3, self.y + 3, None, round_values=False)
                 self.player.bullets.append(newBullet)
     
         if self.weaponclass == 'sds':
@@ -995,10 +1026,12 @@ class Grenade(Bullet):
     
 class Player:
     def __init__(self, player, x, y, bodycolour, left, right, up, down, fire, throw, weaponclass, x_origin, y_origin):
-        self.player = player                 
+        self.player = player
+        self.otherPlayer = None                
         self.isReloading = False
                          
         self.last_hit = time.time()
+        self.last_moved = time.time()
         self.wait_time = 1000
         
         if self.player == 'p1':
@@ -1020,7 +1053,7 @@ class Player:
         self.width = 40
         self.height = 40
         
-        self.bulletfired = 0
+        self.bullethfired = 0
         self.bodycolour = bodycolour
         
         self.bullets = []
@@ -1050,7 +1083,10 @@ class Player:
             self.health = 110
 
         elif self.weaponclass == 's':
-            self.health = 75
+            self.health = 87.5
+        
+        elif self.weaponclass == 'mar':
+            self.health = 85
 
         elif self.weaponclass == 'br':
             self.health = 95
@@ -1078,11 +1114,14 @@ class Player:
 
         elif self.weaponclass == 'hrpg':
             self.health = 135
+
+        elif self.weaponclass == 'thf':
+            self.health = 55
             
         else:
             self.health = 100
         
-        self.lastFire = 0
+        self.lasthfire = 0
         self.lastThrow = 0
         self.isFiring = False
     
@@ -1128,6 +1167,10 @@ class Player:
             if self.lastDy != 0:
                 self.lastDx = 0
             self.dx = 0
+
+
+        if self.dx != 0 or self.dy != 0:
+            self.last_moved = time.time()
 
 
         self.x += self.dx
@@ -1246,62 +1289,66 @@ class Player:
         if self.weaponclass == 'cs':
             self.firedBullets += 1
             for i in range(cs_pellets):
-                newBullet = Bullet(self.bulletspawn_x, self.bulletspawn_y, dx, dy, self.weaponclass, self.x, self.y)
+                newBullet = Bullet(self.bulletspawn_x, self.bulletspawn_y, dx, dy, self.weaponclass, self.x, self.y, None)
                 self.bullets.append(newBullet)
                 
                 
         elif self.weaponclass == 'ps':
             self.firedBullets += 1
             for i in range(ps_pellets):
-                newBullet = Bullet(self.bulletspawn_x, self.bulletspawn_y, dx, dy, self.weaponclass, self.x, self.y)
+                newBullet = Bullet(self.bulletspawn_x, self.bulletspawn_y, dx, dy, self.weaponclass, self.x, self.y, None)
                 self.bullets.append(newBullet)
                 
                 
         elif self.weaponclass == 'br':
             for i in range(br_burst):
                 if dy == 0:
-                    newBullet = Bullet(self.bulletspawn_x - 19 * (i - 1), self.bulletspawn_y, dx, dy, self.weaponclass, self.x, self.y)
+                    newBullet = Bullet(self.bulletspawn_x - 19 * (i - 1), self.bulletspawn_y, dx, dy, self.weaponclass, self.x, self.y, None)
                     self.bullets.append(newBullet)
                     self.firedBullets += 1
                     
                 elif dx == 0:
-                    newBullet = Bullet(self.bulletspawn_x, self.bulletspawn_y - 19 * (i - 1), dx, dy, self.weaponclass, self.x, self.y)
+                    newBullet = Bullet(self.bulletspawn_x, self.bulletspawn_y - 19 * (i - 1), dx, dy, self.weaponclass, self.x, self.y, None)
                     self.bullets.append(newBullet)
                     self.firedBullets += 1
 
         elif self.weaponclass == 'bp':
             for i in range(bp_burst):
                 if dy == 0:
-                    newBullet = Bullet(self.bulletspawn_x - 16 * (i - 1), self.bulletspawn_y, dx, dy, self.weaponclass, self.x, self.y)
+                    newBullet = Bullet(self.bulletspawn_x - 16 * (i - 1), self.bulletspawn_y, dx, dy, self.weaponclass, self.x, self.y, None)
                     self.bullets.append(newBullet)
                     self.firedBullets += 1
                     
                 elif dx == 0:
-                    newBullet = Bullet(self.bulletspawn_x, self.bulletspawn_y - 16 * (i - 1), dx, dy, self.weaponclass, self.x, self.y)
+                    newBullet = Bullet(self.bulletspawn_x, self.bulletspawn_y - 16 * (i - 1), dx, dy, self.weaponclass, self.x, self.y, None)
                     self.bullets.append(newBullet)
                     self.firedBullets += 1
 
         elif self.weaponclass == 'mar':
-            if (time.time() - self.lastFire) - (time.time()- self.fire_key_up) >= 0:
-                newBullet = Bullet(self.bulletspawn_x, self.bulletspawn_y, dx, dy, self.weaponclass, self.x, self.y)
+            if (time.time() - self.lasthfire) - (time.time()- self.fire_key_up) >= 0:
+                newBullet = Bullet(self.bulletspawn_x, self.bulletspawn_y, dx, dy, self.weaponclass, self.x, self.y, None)
                 self.bullets.append(newBullet)
                 self.firedBullets += 1
 
-                    
+        elif self.weaponclass == 's':
+            newBullet = Bullet(self.bulletspawn_x, self.bulletspawn_y, dx, dy, self.weaponclass, self.x, self.y, self.otherPlayer)
+            self.bullets.append(newBullet)
+            self.firedBullets += 1
+
         elif self.weaponclass == 'hmg':
             if dx == 0:
-                newBullet = Bullet(self.bulletspawn_x - uniform(-10, 10), self.bulletspawn_y, dx, dy, self.weaponclass, self.x, self.y)
+                newBullet = Bullet(self.bulletspawn_x - uniform(-10, 10), self.bulletspawn_y, dx, dy, self.weaponclass, self.x, self.y, None)
                 self.bullets.append(newBullet)
                 self.firedBullets += 1
                 
             elif dy == 0:
-                newBullet = Bullet(self.bulletspawn_x, self.bulletspawn_y - uniform(-10, 10), dx, dy, self.weaponclass, self.x, self.y)
+                newBullet = Bullet(self.bulletspawn_x, self.bulletspawn_y - uniform(-10, 10), dx, dy, self.weaponclass, self.x, self.y, None)
                 self.bullets.append(newBullet)
                 self.firedBullets += 1
 
         elif self.weaponclass == 'n':
             if len(self.bullets) < 100:
-                newBullet = Bullet(self.x, self.y, dx, dy, self.weaponclass, self.x, self.y)
+                newBullet = Bullet(self.x, self.y, dx, dy, self.weaponclass, self.x, self.y, None)
                 self.bullets.append(newBullet)
                 self.firedBullets += 1
 
@@ -1310,11 +1357,11 @@ class Player:
                 del self.bullets[0]
                 
             if len(self.bullets) < weapon_magazines['t']:
-                newBullet = Bullet(self.bulletspawn_x, self.bulletspawn_y, dx, dy, self.weaponclass, self.x, self.y)
+                newBullet = Bullet(self.bulletspawn_x, self.bulletspawn_y, dx, dy, self.weaponclass, self.x, self.y, None)
                 self.bullets.append(newBullet)
                 
         elif self.weaponclass == 'gl':
-            newGrenade = Grenade(self.bulletspawn_x, self.bulletspawn_y, dx, dy, self)
+            newGrenade = Grenade(self.bulletspawn_x, self.bulletspawn_y, dx, dy, self, None)
             self.grenades.append(newGrenade)
             self.firedBullets += 1
 
@@ -1327,13 +1374,13 @@ class Player:
                 self.grenades.append(newGrenade)
 
         elif self.weaponclass == 'sap':
-            if (time.time() - self.lastFire) - (time.time()- self.fire_key_up) >= 0:
-                newBullet = Bullet(self.bulletspawn_x, self.bulletspawn_y, dx, dy, self.weaponclass, self.x, self.y)
+            if (time.time() - self.lasthfire) - (time.time()- self.fire_key_up) >= 0:
+                newBullet = Bullet(self.bulletspawn_x, self.bulletspawn_y, dx, dy, self.weaponclass, self.x, self.y, None)
                 self.bullets.append(newBullet)
                 self.firedBullets += 1                       
 
         elif self.weaponclass == 'hrpg':
-            if self.firedBullets == 0:
+            if self.firedBullets == 0 and time.time() - self.last_moved >= 0.125:
                 if pressed[self.throw]:
                     newGrenade = Grenade(self.bulletspawn_x, self.bulletspawn_y, dx, dy, self, straight_aim_hrpg=True)
                     self.grenades.append(newGrenade)
@@ -1349,11 +1396,11 @@ class Player:
                 return
             
         else:
-            newBullet = Bullet(self.bulletspawn_x, self.bulletspawn_y, dx, dy, self.weaponclass, self.x, self.y)
+            newBullet = Bullet(self.bulletspawn_x, self.bulletspawn_y, dx, dy, self.weaponclass, self.x, self.y, None)
             self.bullets.append(newBullet)
             self.firedBullets += 1
             
-        self.lastFire = time.time()
+        self.lasthfire = time.time()
 
     def bullet(self, weaponclass):
         if self.outOfAmmo(self.weaponclass):
@@ -1367,7 +1414,7 @@ class Player:
             if (self.getCooldown() > weapon_cooldowns[self.weaponclass]) and (not self.outOfAmmo(self.weaponclass)) and self.reloaded(self.weaponclass):
                 self.nested_fire_function()
 
-        if self.weaponclass == 'hrpg' and (time.time() - self.lastFire >= weapon_cooldowns['hrpg']) and self.isFiring and (not self.outOfAmmo('hrpg')) and (self.reloaded('hrpg')): 
+        if self.weaponclass == 'hrpg' and (time.time() - self.lasthfire >= weapon_cooldowns['hrpg']) and self.isFiring and (not self.outOfAmmo('hrpg')) and (self.reloaded('hrpg')): 
             dx = self.dx
             dy = self.dy
 
@@ -1396,13 +1443,13 @@ class Player:
                     newGrenade = Grenade(self.bulletspawn_x, self.bulletspawn_y, dx, dy, self, straight_aim_hrpg=True)
                     self.grenades.append(newGrenade)
                     self.firedBullets += 1
-                    self.lastFire = time.time()
+                    self.lasthfire = time.time()
                     
             else:
                 newGrenade = Grenade(self.bulletspawn_x, self.bulletspawn_y, dx, dy, self)
                 self.grenades.append(newGrenade)
                 self.firedBullets += 1
-                self.lastFire = time.time()
+                self.lasthfire = time.time()
             
             if self.firedBullets == weapon_magazines['hrpg']:
                 self.isFiring = False
@@ -1468,7 +1515,7 @@ class Player:
                 grenade.detonate()
                 
     def getCooldown(self):
-        return time.time() - self.lastFire
+        return time.time() - self.lasthfire
     
     def getGrenadeCooldown(self):
         return time.time() - self.lastThrow
@@ -1491,6 +1538,8 @@ class Player:
 
 p1 = Player('p1', 40, 40, (0, 100, 0), pygame.K_LEFT, pygame.K_RIGHT, pygame.K_UP, pygame.K_DOWN, pygame.K_SLASH, pygame.K_PERIOD, TankOptions.player1_weapon, 0, 0)
 p2 = Player('p2', SCREEN_WIDTH - 80, SCREEN_HEIGHT - 80, (100, 0, 0), pygame.K_a, pygame.K_d, pygame.K_w, pygame.K_s, pygame.K_q, pygame.K_e, TankOptions.player2_weapon, 0, 0)
+p1.otherPlayer = p2
+p2.otherPlayer = p1
 obstacles = Obstacles(TankOptions.obstacles_frame_answer, TankOptions.maps_frame_answer)
 blood_splatters = []
 
@@ -1617,15 +1666,15 @@ while not done:
             for bullet in p1.bullets:
                 if turret.isTouching(bullet):
                     turret.health -= 1 * bullet_penetration_factors[bullet.weaponclass]
-                    if p1.weaponclass == 'tf':
-                        p1.health += 0.8 * bullet_penetration_factors[bullet.weaponclass]
+                    if p1.weaponclass == 'thf':
+                        p1.health += 0.08 * bullet_penetration_factors[bullet.weaponclass]
                     turret.last_hit = time.time()
                     
             for bullet in p2.bullets:
                 if turret.isTouching(bullet):
-                    print('The baby turret was shot')
+                    print('The baby turret has been shot.')
                     turret.health -= 1 * bullet_penetration_factors[bullet.weaponclass]
-                    if p2.weaponclass == 'tf':
+                    if p2.weaponclass == 'thf':
                         p2.health += 0.08 * bullet_penetration_factors[bullet.weaponclass]
                     turret.last_hit = time.time()
                     

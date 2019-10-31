@@ -114,7 +114,7 @@ class WeaponFrame:
         self.add_option('Semi-Automatic Pistol', 'sap')
         self.add_option('Machine Pistol', 'mp')
         self.add_option('Homing Missile', 'hrpg')
-        self.add_option('Thief', 'tf')
+        self.add_option('Thief', 'thf')
         self.add_option('Dev ONLY', 'D')
 
     def add_option(self, name, alias):
