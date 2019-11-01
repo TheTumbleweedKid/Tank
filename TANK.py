@@ -365,26 +365,26 @@ def gety():
 
 def recentlyShot(subject, last_hit, wait_time):
     if type(subject) == Player:
-        if time.time() - subject.last_hit >= 5:
+        if time.time() - subject.last_hit >= 5 and subject.health < subject.max_health:
             player.health += 0.025
 
     if time.time() - subject.last_hit <= subject.wait_time:
         return True
 
-def healthBar(subject, colour, x, y, health, width, adjustment_factor):
+def healthBar(subject, colour, adjustment_factor):
     if recentlyShot(subject, subject.last_hit, subject.wait_time):
         if type(subject) == Player:
-            pygame.draw.rect(screen, colour, pygame.Rect(x + (width / 2) - ((health / adjustment_factor) / 2), y - 10, health / adjustment_factor, 3)) 
+            pygame.draw.rect(screen, colour, pygame.Rect(subject.x + (subject.width / 2) - ((subject.health / adjustment_factor) / 2), subject.y - 10, subject.health / adjustment_factor, 3)) 
 
         else:
             if subject.width <= 56:
-                pygame.draw.rect(screen, colour, pygame.Rect(x + (width / 2) - ((health / (adjustment_factor * 0.6)) / 2), y - 12, health / adjustment_factor, 5)) 
+                pygame.draw.rect(screen, colour, pygame.Rect(subject.x + (subject.width / 2) - ((subject.health / (adjustment_factor * 0.6)) / 2), subject.y - 12, subject.health / adjustment_factor, 5)) 
 
             elif subject.width <= 64:
-                pygame.draw.rect(screen, colour, pygame.Rect(x + (width / 2) - ((health / (adjustment_factor)) / 2), y - 12, health / adjustment_factor, 5))
+                pygame.draw.rect(screen, colour, pygame.Rect(subject.x + (subject.width / 2) - ((subject.health / (adjustment_factor)) / 2), subject.y - 12, subject.health / adjustment_factor, 5))
 
             else:
-                pygame.draw.rect(screen, colour, pygame.Rect(x + (width / 2) - ((health / (adjustment_factor * 1.2)) / 2), y - 12, health / adjustment_factor, 5))
+                pygame.draw.rect(screen, colour, pygame.Rect(subject.x + (subject.width / 2) - ((subject.health / (adjustment_factor * 1.2)) / 2), subject.y - 12, subject.health / adjustment_factor, 5))
 
 class BloodSpatter:
     def __init__(self, colour, x, y):
@@ -618,6 +618,10 @@ class Bullet:
         
         self.x_origin = x_origin
         self.y_origin = y_origin
+
+        self.radius = 7
+        self.width = 14
+        self.height = 14
         
         self.weaponclass = weaponclass
 
@@ -637,15 +641,7 @@ class Bullet:
             
         else:
             self.gls_range_value = uniform(60, uniform(79, uniform(90, uniform(106, uniform(120, 160)))))
-
-        if weaponclass == 's':
-            (des_dx, des_dy) = (self.get_bullet_velocity(otherPlayer))
-            
-            dx += self.interpolate(dx, des_dx, 0.1)
-            dx = self.lock(dx, 0.1)
-
-            dy += self.interpolate(dy, des_dy, 0.1)
-            dy = self.lock(dy, 0.1)
+        
 
         if round_values:
             self.dx = self.bulletSpeed(specialRound(dx))
@@ -675,6 +671,16 @@ class Bullet:
         elif weaponclass == 'mng':
             self.dx += uniform(-0.45, 0.45)
             self.dy += uniform(-0.45, 0.45)
+
+        elif weaponclass == 's':
+            (des_dx, des_dy) = (self.get_bullet_velocity(otherPlayer))
+            if self.range_finder(otherPlayer) < 350:
+                self.dx += self.interpolate(self.dx, des_dx, 0.85)
+                self.dy += self.interpolate(self.dy, des_dy, 0.85)
+
+            else:
+                self.dx += self.interpolate(self.dx, des_dx, 0.105)
+                self.dy += self.interpolate(self.dy, des_dy, 0.105)
             
         elif weaponclass == 'br':
             self.dx += uniform(-0.1, 0.1)
@@ -717,9 +723,6 @@ class Bullet:
             
         else:
             self.damage = bullet_damages[weaponclass]
-        
-        self.width = 14
-        self.height = 14
     
     def move(self):
         self.x += self.dx
@@ -764,6 +767,10 @@ class Bullet:
             if obstacles.isTouching(self) and not (self.weaponclass == 'c4'):
                 return True
 
+    def range_finder(self, player):
+        dist = math.sqrt(((player.x + 20) - (self.x + self.radius)) ** 2 + ((player.y + 20) - (self.y + self.radius)) ** 2)
+        return dist
+
     def get_bullet_velocity(self, otherPlayer):
         horizontal = -(self.x - otherPlayer.x)
         vertical = -(self.y - otherPlayer.y)
@@ -779,14 +786,7 @@ class Bullet:
             return -increment
         else:
             return 0
-
-    def lock(self, value, max):
-        if value < -max:
-            return -max
-        elif value > max:
-            return max
-        return value
-
+            
     def ps_range(self):
         dx = (self.x - self.x_origin)
         dy = (self.y - self.y_origin)
@@ -1045,11 +1045,14 @@ class Player:
 
         self.x_origin = x_origin
         self.y_origin = y_origin
+
         self.dx = 0
         self.dy = 0
+
         self.lastDx = 1
         self.lastDy = 0
 
+        self.radius = 20
         self.width = 40
         self.height = 40
         
@@ -1120,6 +1123,8 @@ class Player:
             
         else:
             self.health = 100
+
+        self.max_health = self.health
         
         self.lasthfire = 0
         self.lastThrow = 0
@@ -1693,7 +1698,7 @@ while not done:
 
             turret.target(p1, p2)
             turret.draw()
-            healthBar(turret, (0, 0, 150), turret.x, turret.y, turret.health, turret.radius, 6) 
+            healthBar(turret, (0, 0, 150), 6) 
             
             
         for bullet in turret_bullets:
@@ -1706,14 +1711,14 @@ while not done:
             splatter.draw()
                          
         for obstacle in obstacles.obstacles:
-            healthBar(obstacle, (0, 0, 150), obstacle.x, obstacle.y, obstacle.health, obstacle.radius, 12)  
+            healthBar(obstacle, (0, 0, 150), 12)  
 
         for player in [p1, p2]:
             if player.health <= 30:
-                healthBar(player, (0, 0, 150), player.x, player.y, player.health, 40, 4)
+                healthBar(player, (0, 0, 150), 4)
                 
             else:
-                healthBar(player, player.bodycolour, player.x, player.y, player.health, 40, 4)
+                healthBar(player, player.bodycolour, 4)
 
                       
                          
