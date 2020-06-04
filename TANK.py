@@ -115,7 +115,7 @@ weapon_magazines = {
     'mp': 21,
     'st': 60,
     'rft': 120,
-    'hrpg': 3,
+    'hrpg': 4,
     'thf': 45
 }
 
@@ -143,7 +143,7 @@ weapon_reloads = {
     'mp': 1.6,
     'st': 7,
     'rft': 8,
-    'hrpg': 3,
+    'hrpg': 3.75,
     'thf': 2.5
 }
 
@@ -749,8 +749,9 @@ class Bullet:
     def isColliding(self, player, otherPlayer):
         if player.isTouchingBullet(self):
             global blood_splatters
-            for i in range(0, randint(1, 3)):
-                blood_splatters.append(BloodSpatter((randint(177, 200), 11, 11), player.x + 10 + uniform(-24, 24), player.y + 10 + uniform(-24, 24)))
+            if player.weaponclass != 'thf' and otherPlayer.weaponclass != 'st' and otherPlayer.weaponclass != 'rft':
+                for i in range(0, randint(1, 3)):
+                    blood_splatters.append(BloodSpatter((randint(177, 200), 11, 11), player.x + 10 + uniform(-24, 24), player.y + 10 + uniform(-24, 24)))
             
             player.health -= self.damage
             if otherPlayer.weaponclass == 'thf':
@@ -1392,6 +1393,12 @@ class Player:
                     self.grenades.append(newGrenade)
                     self.firedBullets += 1
                     self.isFiring = True
+                    for i in range(10):
+                        dx = uniform(-4, 4)
+                        dy = uniform(-4, 4)
+                        newBullet = Bullet(self.x + 12 + uniform(-17, 17), self.y + 12 + uniform(-17, 17), dx, dy, 'gls', self.x + 12, self.y + 12, None, 'hrpg-short', round_values=False)
+                        self.bullets.append(newBullet)
+                    
             else:
                 return
             
@@ -1450,6 +1457,11 @@ class Player:
                 self.grenades.append(newGrenade)
                 self.firedBullets += 1
                 self.lasthfire = time.time()
+                for i in range(10):
+                        dx = uniform(-4, 4)
+                        dy = uniform(-4, 4)
+                        newBullet = Bullet(self.x + 12 + uniform(-17, 17), self.y + 12 + uniform(-17, 17), dx, dy, 'gls', self.x + 12, self.y + 12, None, 'hrpg-short', round_values=False)
+                        self.bullets.append(newBullet)
             
             if self.firedBullets == weapon_magazines['hrpg']:
                 self.isFiring = False
