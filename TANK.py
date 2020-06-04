@@ -214,8 +214,8 @@ player_speeds = {
     'hrpg': 4,
     'hrpg-low': 4.25,
 
-    'thf': 5,
-    'thf-low': 5.5
+    'thf': 6.5,
+    'thf-low': 6.85
 }
 
 bullet_speeds = {
@@ -1034,12 +1034,6 @@ class Player:
         self.last_moved = time.time()
         self.wait_time = 1000
         
-        if self.player == 'p1':
-            self.playerImg = pygame.image.load('.\TankAssets\GreenSoldier Paint\GreenSoldierRight(Paint).png')
-            
-        else:
-            self.playerImg = pygame.image.load('.\TankAssets\RedSoldier Paint\RedSoldierRight(Paint).png')
-        
         self.x = x
         self.y = y
 
@@ -1075,10 +1069,7 @@ class Player:
         self.oldY = 0
         
         self.weaponclass = weaponclass
-
-        self.weaponImg = pygame.image.load(r'.\\TankAssets\Weapon Paint\\' + str(self.weaponclass).upper() + '\\' + str(self.weaponclass) + ' Right.png')
         
-
         if self.weaponclass == 'ps':
             self.health = 92.5
 
@@ -1136,6 +1127,31 @@ class Player:
         self.thrownGrenades = 0
     
         self.speed = player_speeds[weaponclass]
+
+        
+
+        if self.player == 'p1':
+            self.playerImg = pygame.image.load('.\TankAssets\GreenSoldier Paint\GreenSoldierRight(Paint).png')
+            self.weaponImg = pygame.image.load(r'.\\TankAssets\Weapon Paint\\' + str(self.weaponclass).upper() + '\\' + str(self.weaponclass) + ' Right.png')
+            
+            self.playerImgDown = pygame.image.load('.\TankAssets\GreenSoldier Paint\GreenSoldierDown(Paint).png')   
+            self.playerImgUp = pygame.image.load('.\TankAssets\GreenSoldier Paint\GreenSoldierUp(Paint).png')
+            self.playerImgRight = pygame.image.load('.\TankAssets\GreenSoldier Paint\GreenSoldierRight(Paint).png')
+            self.playerImgLeft = pygame.image.load('.\TankAssets\GreenSoldier Paint\GreenSoldierLeft(Paint).png')
+        else:
+            self.playerImg = pygame.image.load('.\TankAssets\RedSoldier Paint\RedSoldierLeft(Paint).png')
+            self.weaponImg = pygame.image.load(r'.\\TankAssets\Weapon Paint\\' + str(self.weaponclass).upper() + '\\' + str(self.weaponclass) + ' Left.png')
+            
+            self.playerImgDown = pygame.image.load('.\TankAssets\RedSoldier Paint\RedSoldierDown(Paint).png')   
+            self.playerImgUp = pygame.image.load('.\TankAssets\RedSoldier Paint\RedSoldierUp(Paint).png')
+            self.playerImgRight = pygame.image.load('.\TankAssets\RedSoldier Paint\RedSoldierRight(Paint).png')
+            self.playerImgLeft = pygame.image.load('.\TankAssets\RedSoldier Paint\RedSoldierLeft(Paint).png')
+
+                
+        self.weaponImgDown = pygame.image.load(r'.\\TankAssets\Weapon Paint\\' + str(self.weaponclass).upper() + '\\' + str(self.weaponclass) + ' Down.png')
+        self.weaponImgUp = pygame.image.load(r'.\\TankAssets\Weapon Paint\\' + str(self.weaponclass).upper() + '\\' + str(self.weaponclass) + ' Up.png')
+        self.weaponImgRight = pygame.image.load(r'.\\TankAssets\Weapon Paint\\' + str(self.weaponclass).upper() + '\\' + str(self.weaponclass) + ' Right.png')
+        self.weaponImgLeft = pygame.image.load(r'.\\TankAssets\Weapon Paint\\' + str(self.weaponclass).upper() + '\\' + str(self.weaponclass) + ' Left.png')
 
     def damage(self, health):
         self.health -= health
@@ -1195,43 +1211,22 @@ class Player:
             self.x = self.oldX
             self.y = self.oldY
 
-        if self.player == 'p1':
-            if (self.dy / self.speed) == 1:
-                self.playerImg = pygame.image.load('.\TankAssets\GreenSoldier Paint\GreenSoldierDown(Paint).png')
-                
-            elif (self.dy / self.speed) == -1:
-                self.playerImg = pygame.image.load('.\TankAssets\GreenSoldier Paint\GreenSoldierUp(Paint).png')
-
-            elif (self.dx / self.speed) == 1:
-                self.playerImg = pygame.image.load('.\TankAssets\GreenSoldier Paint\GreenSoldierRight(Paint).png')
-                
-            elif (self.dx / self.speed) == -1:
-                self.playerImg = pygame.image.load('.\TankAssets\GreenSoldier Paint\GreenSoldierLeft(Paint).png')
-
-        else:
-            if (self.dy / self.speed) == 1:
-                self.playerImg = pygame.image.load('.\TankAssets\RedSoldier Paint\RedSoldierDown(Paint).png')
-
-            elif (self.dy / self.speed) == -1:
-                self.playerImg = pygame.image.load('.\TankAssets\RedSoldier Paint\RedSoldierUp(Paint).png')
-
-            elif (self.dx / self.speed) == 1:
-                self.playerImg = pygame.image.load('.\TankAssets\RedSoldier Paint\RedSoldierRight(Paint).png')
-                
-            elif (self.dx / self.speed) == -1:
-                self.playerImg = pygame.image.load('.\TankAssets\RedSoldier Paint\RedSoldierLeft(Paint).png')
 
         if (self.dy / self.speed) == 1:
-            self.weaponImg = pygame.image.load(r'.\\TankAssets\Weapon Paint\\' + str(self.weaponclass).upper() + '\\' + str(self.weaponclass) + ' Down.png')
+            self.playerImg = self.playerImgDown
+            self.weaponImg = self.weaponImgDown
 
         elif (self.dy / self.speed) == -1:
-            self.weaponImg = pygame.image.load(r'.\\TankAssets\Weapon Paint\\' + str(self.weaponclass).upper() + '\\' + str(self.weaponclass) + ' Up.png')
+            self.playerImg = self.playerImgUp
+            self.weaponImg = self.weaponImgUp
             
         elif (self.dx / self.speed) == 1:
-            self.weaponImg = pygame.image.load(r'.\\TankAssets\Weapon Paint\\' + str(self.weaponclass).upper() + '\\' + str(self.weaponclass) + ' Right.png')
+            self.playerImg = self.playerImgRight
+            self.weaponImg = self.weaponImgRight
                 
         elif (self.dx / self.speed) == -1:
-            self.weaponImg = pygame.image.load(r'.\\TankAssets\Weapon Paint\\' + str(self.weaponclass).upper() + '\\' + str(self.weaponclass) + ' Left.png')
+            self.playerImg = self.playerImgLeft
+            self.weaponImg = self.weaponImgLeft
             
         screen.blit(self.playerImg, (self.x, self.y))
         screen.blit(self.weaponImg, (self.x, self.y))
